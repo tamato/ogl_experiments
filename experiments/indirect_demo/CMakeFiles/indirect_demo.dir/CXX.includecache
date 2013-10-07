@@ -1,0 +1,36 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/ahrimen/programming/ogl_experiments/common/gputimer.cpp
+gputimer.h
+/home/ahrimen/programming/ogl_experiments/common/gputimer.h
+iostream
+-
+
+/home/ahrimen/programming/ogl_experiments/common/gputimer.h
+vector
+-
+GL/glew.h
+-
+
+/home/ahrimen/programming/ogl_experiments/experiments/indirect_demo/indirect.cpp
+
+external/glew/include/GL/glew.h
+stddef.h
+-
+inttypes.h
+-
+stdint.h
+-
+inttypes.h
+-
+OpenGL/glu.h
+-
+GL/glu.h
+-
+

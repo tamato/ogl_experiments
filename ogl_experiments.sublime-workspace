@@ -1,0 +1,1232 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"VBO_",
+				"VBO_Bindless"
+			],
+			[
+				"glGet",
+				"glGetError"
+			],
+			[
+				"data",
+				"data_init"
+			],
+			[
+				"gpu",
+				"gpuTimer"
+			],
+			[
+				"CO",
+				"COMMON_DIR"
+			],
+			[
+				"Stat",
+				"StatBase"
+			],
+			[
+				"const",
+				"constructor"
+			],
+			[
+				"file",
+				"fileName"
+			],
+			[
+				"err",
+				"errorBuffer"
+			],
+			[
+				"VBO",
+				"VBOCount"
+			],
+			[
+				"init",
+				"initShadersBindless"
+			],
+			[
+				"initSh",
+				"initShadersOldVBOs"
+			],
+			[
+				"be",
+				"begin"
+			],
+			[
+				"comp",
+				"compent_count"
+			],
+			[
+				"requi",
+				"required_exts"
+			],
+			[
+				"re",
+				"required_exts"
+			],
+			[
+				"gl",
+				"gl_Position"
+			],
+			[
+				"add_",
+				"add_library"
+			],
+			[
+				"frag",
+				"frag_RayStart"
+			],
+			[
+				"In",
+				"InvWaveLength"
+			],
+			[
+				"scal",
+				"scale_over_scaldepth"
+			],
+			[
+				"scale",
+				"scale_depth"
+			],
+			[
+				"sp",
+				"sphere_mesh"
+			],
+			[
+				"mie",
+				"miePhase"
+			],
+			[
+				"cam",
+				"camera"
+			],
+			[
+				"Scale",
+				"ScaleDepth"
+			],
+			[
+				"Sca",
+				"Scale"
+			],
+			[
+				"fra",
+				"frag_Ray"
+			],
+			[
+				"Ray",
+				"RayLeighSun"
+			],
+			[
+				"Scaled",
+				"scaledLength"
+			],
+			[
+				"Scal",
+				"ScaleOverScaleDepth"
+			],
+			[
+				"Mie",
+				"MieSun"
+			],
+			[
+				"sam",
+				"sample_increment"
+			],
+			[
+				"light",
+				"light_angle"
+			],
+			[
+				"seg",
+				"segment_increment"
+			],
+			[
+				"segme",
+				"segment_point"
+			],
+			[
+				"start",
+				"start_pt"
+			],
+			[
+				"terrain",
+				"terrain_pt"
+			],
+			[
+				"ray",
+				"ray_length"
+			],
+			[
+				"sphere",
+				"sphere_uniforms"
+			],
+			[
+				"dome",
+				"dome_vert"
+			],
+			[
+				"mod",
+				"modelViewMatrix"
+			],
+			[
+				"pro",
+				"projectionMatrix"
+			],
+			[
+				"text",
+				"textContent"
+			],
+			[
+				"getE",
+				"getElementById"
+			],
+			[
+				"sunt",
+				"suntest"
+			],
+			[
+				"eye",
+				"eyetest"
+			],
+			[
+				"nor",
+				"normalize"
+			],
+			[
+				"gl_F",
+				"gl_FragColor"
+			],
+			[
+				"inv",
+				"invrs_proj"
+			],
+			[
+				"sun_",
+				"sun_radius"
+			],
+			[
+				"sun",
+				"sun_radius"
+			],
+			[
+				"no",
+				"normalize"
+			],
+			[
+				"mult",
+				"multiplyVector3"
+			],
+			[
+				"n",
+				"normalize"
+			],
+			[
+				"mu",
+				"multiplyVector3"
+			],
+			[
+				"atmos",
+				"atmospheric_depth"
+			],
+			[
+				"atmosp",
+				"atmosphereTop"
+			],
+			[
+				"invrs",
+				"invrs_cam"
+			],
+			[
+				"gl_Fra",
+				"gl_FragCoord"
+			],
+			[
+				"lok",
+				"lookatvec"
+			],
+			[
+				"add",
+				"addSelf"
+			],
+			[
+				"look",
+				"lookatpt"
+			],
+			[
+				"inc",
+				"incScale"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "experiments/bindless_nv/bindless_nv.cpp",
+			"settings":
+			{
+				"buffer_size": 13488,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/ahrimen/git_repos/ogl-samples/samples/gl-420-primitive-bindless-nv.cpp",
+			"settings":
+			{
+				"buffer_size": 8774,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/ahrimen/git_repos/ogl-samples/samples/gl-400-draw-indirect.cpp",
+			"settings":
+			{
+				"buffer_size": 6133,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/ahrimen/git_repos/ogl-samples/samples/gl-420-debug-output.cpp",
+			"settings":
+			{
+				"buffer_size": 8553,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/ahrimen/git_repos/ogl-samples/samples/gl-420-draw-indirect-amd.cpp",
+			"settings":
+			{
+				"buffer_size": 7063,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "common/gputimer.cpp",
+			"settings":
+			{
+				"buffer_size": 2927,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "common/gputimer.h",
+			"settings":
+			{
+				"buffer_size": 582,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 79.0,
+		"selected_items":
+		[
+			[
+				"c++",
+				"Set Syntax: C++"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"ssglsl",
+				"Set Syntax: GLSL"
+			],
+			[
+				"ssC++",
+				"Set Syntax: C++"
+			],
+			[
+				"user",
+				"Preferences: Settings - User"
+			],
+			[
+				"diff",
+				"FileDiffs: Menu"
+			],
+			[
+				"usr",
+				"Preferences: Settings - User"
+			],
+			[
+				"build",
+				"Build: Build"
+			],
+			[
+				"settings-",
+				"Preferences: Settings - Default"
+			],
+			[
+				"tabs",
+				"View: Toggle Tabs"
+			],
+			[
+				"tab si",
+				"Preferences: MoveTabs Settings – Default"
+			],
+			[
+				":w",
+				":w - Save"
+			],
+			[
+				"pref",
+				"Preferences: Settings - Default"
+			],
+			[
+				"ss c++",
+				"Set Syntax: C++"
+			],
+			[
+				"color ",
+				"ColorSchemeSelector: Select Color Scheme"
+			],
+			[
+				"install ",
+				"Package Control: Install Package"
+			],
+			[
+				"inst",
+				"Package Control: Install Package"
+			],
+			[
+				"list pa",
+				"Package Control: List Packages"
+			],
+			[
+				"reindent",
+				"Indentation: Reindent Lines"
+			],
+			[
+				"ss cmake",
+				"Set Syntax: CMake"
+			],
+			[
+				"ss",
+				"Set Syntax: Makefile"
+			],
+			[
+				"ss glsl",
+				"Set Syntax: GLSL"
+			],
+			[
+				"du",
+				"FileDiffs: Menu"
+			],
+			[
+				"dif",
+				"FileDiffs: Menu"
+			],
+			[
+				"filed",
+				"FileDiffs: Menu"
+			],
+			[
+				"file",
+				"FileDiffs: Menu"
+			],
+			[
+				"de",
+				"Preferences: Settings - Default"
+			],
+			[
+				"def",
+				"Preferences: Settings - Default"
+			],
+			[
+				"gdb:",
+				"SublimeGDB: Stop Debugging"
+			],
+			[
+				"gdb: ",
+				"SublimeGDB: Open Breakpoint View"
+			],
+			[
+				"gdb",
+				"SublimeGDB: Open Console View"
+			],
+			[
+				"js",
+				"Set Syntax: JavaScript"
+			],
+			[
+				"gdb ",
+				"Set Syntax: GDB Disassembly"
+			],
+			[
+				"pack",
+				"Preferences: Browse Packages"
+			],
+			[
+				"sideb",
+				"View: Toggle Open Files in Side Bar"
+			],
+			[
+				"java",
+				"Set Syntax: JavaScript"
+			],
+			[
+				"ss: ja",
+				"Set Syntax: JavaScript"
+			],
+			[
+				"pre",
+				"Preferences: Settings - User"
+			],
+			[
+				"glsl",
+				"Set Syntax: GLSL"
+			],
+			[
+				"rot",
+				"Rot13 Selection"
+			],
+			[
+				"lua",
+				"Set Syntax: Lua"
+			],
+			[
+				"ro",
+				"Rot13 Selection"
+			],
+			[
+				"ssmake",
+				"Set Syntax: Makefile"
+			]
+		],
+		"width": 435.0
+	},
+	"console":
+	{
+		"height": 850.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/home/ahrimen/programming/ogl_experiments/experiments/bindless_nv/bindless.vert",
+		"/home/ahrimen/programming/ogl_experiments/experiments/bindless_nv/bound.vert",
+		"/home/ahrimen/programming/ogl_experiments/experiments/bindless_nv/bindless.frag",
+		"/home/ahrimen/programming/ogl_experiments/common/gputimer.h",
+		"/home/ahrimen/programming/ogl_experiments/experiments/bindless_nv/bound.frag",
+		"/home/ahrimen/programming/ogl_experiments/my_cmake",
+		"/home/ahrimen/git_repos/ogl-samples/samples/CMakeLists.txt",
+		"/home/ahrimen/git_repos/ogl-samples/CMakeLists.txt",
+		"/home/ahrimen/programming/ogl_experiments/CMakeLists.txt",
+		"/home/ahrimen/programming/ogl_experiments/experiments/bindless_nv/CMakeLists.txt",
+		"/home/ahrimen/git_repos/ogl-samples/samples/gl-420-draw-indirect-amd.cpp",
+		"/home/ahrimen/programming/ogl_experiments/external/glfw/include/GLFW/glfw3.h",
+		"/home/ahrimen/programming/ogl_experiments/external/glfw/include/ ",
+		"/home/ahrimen/xkcd.txt",
+		"/mnt/shared/torrents/Microsoft Office Proffesional Plus 2010 Corporate Final Full Activated -NoGRp/Microsoft Office Profesional Plus 2010 Corporate Final (full activated).txt",
+		"/home/ahrimen/programming/ogl_experiments/CMakeCache.txt",
+		"/home/ahrimen/programming/ogl_experiments/experiments/CMakeLists.txt",
+		"/home/ahrimen/programming/ogl_experiments/ogl_experiments.sublime-project",
+		"/home/ahrimen/programming/codepad.org_experiments/clone_design_pattern.cpp",
+		"/home/ahrimen/git_repos/ogl-samples/samples/gl-330-buffer-uniform-shared.cpp",
+		"/home/ahrimen/git_repos/ogl-samples/samples/gl-420-primitive-bindless-nv.cpp",
+		"/home/ahrimen/programming/ogl_experiments/experiments/bindless_nv/bindless_nv.cpp",
+		"/home/ahrimen/programming/ogl_experiments/bin/bindless_nv_data/bound.frag",
+		"/usr/share/applications/vlc.desktop",
+		"/usr/share/applications/mimeinfo.cache",
+		"/usr/share/applications/defaults.list",
+		"/etc/gnome/defaults.list",
+		"//home/ahrimen/Qt5.1.0/README.txt",
+		"/home/ahrimen/programming/CMakeLists_Template.txt",
+		"/home/ahrimen/passport",
+		"/home/ahrimen/programming/perf_experiments/README.md",
+		"/home/ahrimen/programming/perf_experiments/CMakeLists.txt",
+		"/home/ahrimen/programming/perf_experiments/my_cmake",
+		"/home/ahrimen/git_repos/SDK/CMakeLists.txt",
+		"/home/ahrimen/programming/indirect/src/indirect_main.cpp",
+		"/home/ahrimen/programming/indirect/src/groovounet-bindless_nv.ignore",
+		"/home/ahrimen/programming/glew/src/shaderobject.cpp",
+		"/home/ahrimen/programming/perf_experiments/experiments/bindless_nv/bound.fs",
+		"/home/ahrimen/programming/perf_experiments/experiments/bindless_nv/bound.vs",
+		"/home/ahrimen/programming/perf_experiments/external/glew/include/GL/glew.h",
+		"/home/ahrimen/programming/glew/src/shaderobject.h",
+		"/home/ahrimen/installed_software",
+		"/home/ahrimen/.config/sublime-text-2/Packages/User/Preferences.sublime-settings",
+		"/usr/share/applications/sublime.desktop",
+		"/usr/share/application/sublime.desktop",
+		"/etc/modules",
+		"/etc/default/linux-restricted-modules-common",
+		"/home/ahrimen/nvidia_driver",
+		"/etc/X11/xorg.conf.failsafe",
+		"/etc/X11/xorg.conf.backup",
+		"/etc/X11/xorg.conf",
+		"/home/ahrimen/programming/make_boing/boing.c",
+		"/home/ahrimen/programming/make_boing/CMakeLists.txt",
+		"/usr/include/GL/glext.h",
+		"/home/ahrimen/programming/perf_experiments/external/glfw/examples/CMakeLists.txt",
+		"/home/ahrimen/programming/perf_experiments/external/glfw/examples/Makefile",
+		"/home/ahrimen/programming/perf_experiments/external/glfw/CMakeLists.txt",
+		"/home/ahrimen/git_repos/glfw/CMakeLists.txt",
+		"/home/ahrimen/git_repos/glfw/examples/CMakeLists.txt",
+		"/home/ahrimen/programming/indirect/CMakeLists.txt",
+		"/home/ahrimen/programming/mesh_loader/CMakeLists.txt",
+		"/home/ahrimen/programming/perf_experiments/experiments/CMakeLists.txt",
+		"/home/ahrimen/programming/perf_experiments/experiments/bindless_nv/CMakeLists.txt",
+		"/home/ahrimen/programming/indirect/src/CMakeLists.txt",
+		"/home/ahrimen/git_repos/SDK/samples/gl-lighting/CMakeLists.txt",
+		"/home/ahrimen/git_repos/SDK/samples/CMakeLists.txt",
+		"/home/ahrimen/git_repos/glfw/README.md",
+		"/home/ahrimen/git_repos/glfw/COPYING.txt",
+		"/home/ahrimen/programming/indirect/src/shaderobject.cpp",
+		"/home/ahrimen/git_repos/ogl-samples/external/glew-1.7.0/util/FindGLEW.cmake",
+		"/home/ahrimen/git_repos/sublime-text-2-settings/README.md",
+		"/home/ahrimen/fuckme",
+		"/home/ahrimen/programming/indirect/glew-1.9.0/Makefile",
+		"/home/ahrimen/programming/indirect/src/groovounet-bindless_nv.cpp",
+		"/home/ahrimen/programming/glloadgen/extensions.txt",
+		"/home/ahrimen/programming/glloadgen/ext_script",
+		"/home/ahrimen/programming/indirect/src/glew.c",
+		"/home/ahrimen/programming/indirect/src/gl_core_4_3.cpp",
+		"/home/ahrimen/programming/indirect/src/gl_core_4_3.hpp",
+		"/home/ahrimen/programming/indirect/common/gl_core_4_3.hpp",
+		"/home/ahrimen/programming/indirect/common/CMakeLists.txt",
+		"/home/ahrimen/programming/glloadgen/gl_core_4_3.cpp",
+		"/home/ahrimen/programming/glloadgen/gl_core_4_3.hpp",
+		"/home/ahrimen/programming/glloadgen/glLoadGen_1_1_1/extfiles/gl_ubiquitous.txt",
+		"/home/ahrimen/programming/indirect/src/ogl_exts.txt",
+		"/usr/include/GL/glew.h",
+		"/home/ahrimen/programming/glloadgen/glLoadGen_1_1_1/gl_core_4_3.h",
+		"/home/ahrimen/programming/glloadgen/glLoadGen_1_1_1/gl_core_4_3.c",
+		"/home/ahrimen/programming/glloadgen/gl_plat_3_3.txt",
+		"/home/ahrimen/programming/glloadgen/glx_common.txt",
+		"/home/ahrimen/programming/glext.h",
+		"/home/ahrimen/programming/wglext.h",
+		"/home/ahrimen/programming/glcorearb.h",
+		"/home/ahrimen/programming/glxext.h",
+		"/usr/include/GL/glxew.h",
+		"/home/ahrimen/programming/indirect/src/g-truc_indirect.cpp",
+		"/home/ahrimen/programming/indirect/src/glew.h",
+		"/home/ahrimen/programming/indirect/include/svl/svl.h",
+		"/home/ahrimen/programming/indirect/include/svl/vectormath_aos.h",
+		"/home/ahrimen/programming/indirect/bin/shaders_43/vert.vert",
+		"/home/ahrimen/programming/indirect/README.md",
+		"/home/ahrimen/programming/indirect/lib/glew/CMakeLists.txt",
+		"/home/ahrimen/programming/indirect/glew-1.9.0/README.txt",
+		"/home/ahrimen/programming/glew_old/src/meshbuffer.cpp",
+		"/home/ahrimen/programming/glew_old/src/meshbuffer.h",
+		"/home/ahrimen/programming/glew_old/src/meshloader.cpp",
+		"/home/ahrimen/programming/glew_old/src/meshloader.h",
+		"/home/ahrimen/programming/glew_old/src/meshobject.h",
+		"/home/ahrimen/programming/glew_old/src/meshobject.cpp",
+		"/home/ahrimen/programming/indirect/src/glxew.h",
+		"/home/ahrimen/programming/indirect/src/shaderobject.h",
+		"/usr/local/include/GLFW/glfw3.h",
+		"/home/ahrimen/programming/glew/CMakeLists.txt",
+		"/home/ahrimen/git_repos/glfw/src/init.c",
+		"/home/ahrimen/git_repos/glfw/examples/gears.c",
+		"/home/ahrimen/programming/glew_old/CMakeLists.txt",
+		"/home/ahrimen/.config/sublime-text-2/Packages/Default/Preferences.sublime-settings",
+		"/home/ahrimen/.config/sublime-text-2/Packages/sublime-text-move-tabs/MoveTabs.sublime-settings",
+		"/home/ahrimen/git_repos/glfw/src/CMakeLists.txt",
+		"/home/ahrimen/programming/fluid/render_to_texture/shaders/fsquad.vert",
+		"/home/ahrimen/programming/indirect/src/test.cpp",
+		"/home/ahrimen/programming/fluid/render_to_texture/src/main.cpp",
+		"/home/ahrimen/programming/fluid/render_to_texture/src/linux/ez_window_linux.cpp",
+		"/home/ahrimen/git_repos/sublime-text-2-settings/Preferences.sublime-settings",
+		"/home/ahrimen/.cache/.fr-L7zreQ/README.txt",
+		"/home/ahrimen/programming/fluid/render_to_texture/CMakeLists.txt",
+		"/home/ahrimen/programming/fluid/render_to_texture/brelease",
+		"/home/ahrimen/programming/indirect/src/MakeLists.txt"
+	],
+	"find":
+	{
+		"height": 37.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"GL_ARB_debug_output",
+			"debug",
+			"initvertexarray",
+			"initbuffer",
+			"GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV",
+			"length",
+			"glBufferAddressRangeNV",
+			"enablecl",
+			"length",
+			"Address",
+			"VBO_Addrs",
+			"VBOCount",
+			"Bindless_Program",
+			"bound_loop_counter",
+			"activeQueries",
+			"gpuTimer",
+			"bound",
+			"result",
+			"queries",
+			"glfwGetTime",
+			"bound_loop_counter",
+			"VertexSize",
+			"semantic::attr::POSITION",
+			"glClearColor",
+			"vert_size",
+			"glBufferAddressRangeNV",
+			"VertexSize",
+			"glBufferAddressRangeNV",
+			"glBindVertexArray",
+			"BindlessVao",
+			"glEnableVertexAttribArray",
+			"glEnableClientState",
+			"glBufferAddressRangeNV",
+			"GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV",
+			"glEnableClientState",
+			"cout",
+			"initOldVBOs",
+			"geterr",
+			"glBufferData",
+			"data_init",
+			"data",
+			"VBO_Bound",
+			"\\}",
+			"\\{",
+			"vec3",
+			"data_init",
+			"QuadVerts",
+			"VertexCount",
+			"QuadVerts",
+			"VertexCount",
+			"VBOCount",
+			"float",
+			"timer_start",
+			"gpu_total_time",
+			"10",
+			"default_2",
+			"cout",
+			"elaspedTime",
+			"gpu_total_time",
+			"gpuTimer",
+			"PROJECT_INLINE",
+			"COMMON_DIR",
+			"common",
+			"gpuTimer",
+			"common",
+			"add",
+			"close",
+			"glfwWindow",
+			"mail",
+			"100",
+			"90",
+			"VertexCount",
+			"gldraw",
+			"BoundTimeTotal",
+			"iteration_count",
+			"true",
+			"bound_loop_counter",
+			"total",
+			"BoundTimeTotal",
+			"windows",
+			"xbox",
+			"Character",
+			"{\n",
+			"Character",
+			";",
+			"val",
+			"totem",
+			"mp4",
+			"totem",
+			"totem.desktop",
+			"Bound_Program",
+			"Bindless_Program",
+			"bound",
+			"loan",
+			"sallie",
+			"achaeapassword",
+			"00001118880",
+			"hrpass",
+			"glBufferAddressRangeNV",
+			"uniform",
+			"add",
+			"glMakeBufferResident",
+			"VBO_Addr",
+			"BoundVao",
+			"VBO_Addr",
+			"VBO_Bound",
+			"VBO_Bindless",
+			"VBOCount",
+			"\\)\\{",
+			"\\){",
+			"){",
+			"GL_NV_vertex_buffer_unified_memory",
+			"BaseDirectory",
+			"PROJECT_SHADER",
+			"PROJECT_INLINE",
+			"PROJECT_SHADER",
+			"CMAKE_BINARY_DIR",
+			"CMAKE_CURRENT_BIN_DIR",
+			"CMAKE_BINARY_DIR",
+			"PROJECT_BINARY_DIR",
+			"CMAKE_CURRENT_BIN_DIR",
+			"PROJECT_BINARY_DIR",
+			"CMAKE_CURRENT_SOURCE_DIR",
+			"CMAKE_CURRENT_BINARY_DIR",
+			"PROJECT_BINARY_DIR",
+			"CMAKE_CURRENT_SOURCE_DIR",
+			"CMAKE_CURRENT_BINARY_DIR",
+			"gRealativeDir"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+			")",
+			"(",
+			"vlc",
+			"vlc.desktop",
+			"sublime.desktop",
+			"vtx_att",
+			"att",
+			"(ext.c_str()",
+			" ext.c_str())",
+			"ext.c_str())",
+			"ray",
+			"as_camera",
+			"as_ac",
+			"as_camera",
+			"",
+			"terrain_texture",
+			"terrain_scene",
+			"u",
+			"as_",
+			"",
+			"0,",
+			"&quot;",
+			"MediumTurquoise",
+			"LightSlateGray",
+			"true",
+			"BlanchedAlmond",
+			"sublime.desktop"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 1,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "experiments/bindless_nv/bindless_nv.cpp",
+					"settings":
+					{
+						"buffer_size": 13488,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2453,
+								2453
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 833.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "/home/ahrimen/git_repos/ogl-samples/samples/gl-420-primitive-bindless-nv.cpp",
+					"settings":
+					{
+						"buffer_size": 8774,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								6408,
+								6427
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 2971.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/home/ahrimen/git_repos/ogl-samples/samples/gl-400-draw-indirect.cpp",
+					"settings":
+					{
+						"buffer_size": 6133,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/home/ahrimen/git_repos/ogl-samples/samples/gl-420-debug-output.cpp",
+					"settings":
+					{
+						"buffer_size": 8553,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "/home/ahrimen/git_repos/ogl-samples/samples/gl-420-draw-indirect-amd.cpp",
+					"settings":
+					{
+						"buffer_size": 7063,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "common/gputimer.cpp",
+					"settings":
+					{
+						"buffer_size": 2927,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2757,
+								2757
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1081.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "common/gputimer.h",
+					"settings":
+					{
+						"buffer_size": 582,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								550,
+								550
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 35.0
+	},
+	"input":
+	{
+		"height": 35.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 114.0
+	},
+	"replace":
+	{
+		"height": 64.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+			[
+				"bound",
+				"experiments/bindless_nv/bound.vert"
+			],
+			[
+				"bin.v",
+				"experiments/bindless_nv/bindless.vert"
+			],
+			[
+				"gpu",
+				"common/gputimer.h"
+			],
+			[
+				"bindle",
+				"experiments/bindless_nv/bindless.frag"
+			],
+			[
+				"makelis",
+				"CMakeLists.txt"
+			],
+			[
+				"glfw3.h",
+				"external/glfw/include/GLFW/glfw3.h"
+			],
+			[
+				"bind",
+				"experiments/bindless_nv/bindless_nv.cpp"
+			],
+			[
+				"sublim",
+				"perf_experiments.sublime-project"
+			],
+			[
+				"bound.fg",
+				"experiments/bindless_nv/bound.frag"
+			],
+			[
+				"bound.v",
+				"experiments/bindless_nv/bound.vert"
+			],
+			[
+				"cmak",
+				"CMakeLists.txt"
+			],
+			[
+				"boud",
+				"bin/bindless_nv_data/bound.frag"
+			],
+			[
+				"bind.cpp",
+				"experiments/bindless_nv/bindless_nv.cpp"
+			],
+			[
+				"cmakelis",
+				"CMakeLists.txt"
+			],
+			[
+				"makelists",
+				"CMakeLists.txt"
+			],
+			[
+				"cmakelist",
+				"CMakeLists.txt"
+			],
+			[
+				"glew.h",
+				"external/glew/include/GL/glew.h"
+			],
+			[
+				"cmakelists",
+				"CMakeLists.txt"
+			],
+			[
+				"exp/bin",
+				"experiments/bindless_nv/bindless_nv.cpp"
+			],
+			[
+				"cmakel",
+				"CMakeLists.txt"
+			],
+			[
+				"cmake",
+				"CMakeLists.txt"
+			],
+			[
+				"glew.c",
+				"src/glew.c"
+			],
+			[
+				"shader",
+				"src/shaderobject.cpp"
+			],
+			[
+				"vec",
+				"include/svl/vectormath_aos.h"
+			],
+			[
+				"svl",
+				"include/svl/svl.h"
+			],
+			[
+				"shaders/",
+				"bin/shaders_43/vert.vert"
+			],
+			[
+				"in",
+				"src/g-truc_indirect.cpp"
+			],
+			[
+				"rea",
+				"README.md"
+			],
+			[
+				"src/cm",
+				"src/CMakeLists.txt"
+			],
+			[
+				"glx",
+				"src/glxew.h"
+			],
+			[
+				"ind.cpp",
+				"src/indirect_main.cpp"
+			],
+			[
+				"nod",
+				"/home/ahrimen/Downloads/nodes.js"
+			],
+			[
+				"node",
+				"/home/ahrimen/Downloads/nodes.js"
+			],
+			[
+				"tp",
+				"/usr/share/applications/sublime.desktop"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"selected_items":
+		[
+		],
+		"width": 380.0
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 306.0,
+	"status_bar_visible": true
+}
