@@ -1,5 +1,8 @@
-/bin
-*.sublime-project
+bin
+experiments/*/CMakeFiles
+experiments/*/Makefile
+experiments/*/cmake_install.cmake
+
 *.sublime-workspace
 my_git
 my_cmake
