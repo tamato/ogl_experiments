@@ -1,1 +1,5 @@
 /bin
+*.sublime-project
+*.sublime-workspace
+my_git
+my_cmake
