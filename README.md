@@ -11,8 +11,9 @@
 2. GL_ARB_timer_query
 3. GL_ARB_debug_output
 
-###How to build GLEW (from https://github.com/nigels-com/glew):
+###How to build [GLEW](https://github.com/nigels-com/glew):
 ####Unix:
+* make extensions (to generate src/glew.c [GLEW](https://github.com/nigels-com/glew))
 * make
 * sudo -s
 * make install
@@ -21,8 +22,7 @@
 ####Windows:
 * use the project file in build/vc6/
 
-###How to build GLFW:
-please refer to [glfw on github](https://github.com/glfw/glfw) for details, but a quick summary is as follows
+###How to build [GLFW](https://github.com/glfw/glfw):
 ####Unix:
 * cmake .
 * make
