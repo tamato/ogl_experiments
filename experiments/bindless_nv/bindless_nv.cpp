@@ -1,6 +1,25 @@
 /***************************************************
+    
     Demo app to see the speed difference between
     using bound vertex arrays and bindless
+
+    This app requires that vsync turned off.
+    To attempt to ignore vsync glfwSwapInterval( 0 ) is used but,
+    it may need to be turned off in the nvidia control panel as well.
+
+    Stat's found:
+
+    On Ubuntu:
+        Ubuntu 13.04
+        NVidia 
+            driver: 310.44
+            card: GTX 550 ti
+        OpenGL 4.3.0
+            older vbo's:
+                10K VBO's, 6 verts per vbo = ~560 Draw/second
+            bindless vbo's:
+                10K VBO's, 6 verts per vbo = ~600 Draw/second
+
 ****************************************************/    
 
 #include <iostream>
@@ -24,8 +43,8 @@ namespace {
     GLFWwindow *glfwWindow;
 
     const int QuadVerts = 6;
-    const int VertexCount = QuadVerts * 10000;
-    GLuint VBOCount = 10;
+    const int VertexCount = QuadVerts * 1;
+    GLuint VBOCount = 10000;
     GLuint BoundVao;
     vector<GLuint> VBO_Bound(VBOCount);
     GLuint Bound_Program = 0;
@@ -61,7 +80,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 
 /** makes sure that we can use all the extensions we need for this app */
-void checkExtensions(){
+void checkExtensions()
+{
     /** 
         the extesnsions that are going to be need are for bindless vbo's which are:
     */
@@ -85,7 +105,8 @@ void debugOutput(
     unsigned int severity, 
     int length, 
     const char* message, 
-    void* userParam){
+    void* userParam)
+{
 
     cout << "OGL Debugger Error: \n"
          << "\tSource: "    << OGLDebugSource[source] << "\n"
@@ -129,8 +150,18 @@ void initDebug(){
     glDebugMessageCallbackARB(debugOutput, nullptr);
 }
 
+void initGLSettings()
+{
+    glClearColor( 0,0,0,0 );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+    glDisable(GL_DEPTH_TEST);
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+}
+
 /** creates our Window */
-void initGLFW(){
+void initGLFW()
+{
     int width, height;
 
     /* Init GLFW */
@@ -151,7 +182,8 @@ void initGLFW(){
     }
 
     glfwMakeContextCurrent(glfwWindow);
-    glfwSwapInterval( 1 );
+    glfwSwapInterval( 0 ); // Turn off vsync for benchmarking.
+    cout << "[!] Warning, be sure that vsync is disabled in NVidia controller panel." << endl;
 
     glfwGetFramebufferSize(glfwWindow, &width, &height);
     glViewport( 0, 0, (GLsizei)width, (GLsizei)height );
@@ -162,7 +194,8 @@ void initGLFW(){
 }
 
 /** inits glew for us */
-void initGLEW(){
+void initGLEW()
+{
     glewExperimental=GL_TRUE;
     GLenum err = glewInit();
     if (err != GLEW_OK) {
@@ -175,7 +208,8 @@ void initGLEW(){
 }
 
 /** init some plain jane VBO's */
-void initOldVBOs() {
+void initOldVBOs() 
+{
     // get some safe default data
     vec3 bl(-1.0f, -1.0f, 0.0f);
     vec3 br( 1.0f, -1.0f, 0.0f);
@@ -203,7 +237,8 @@ void initOldVBOs() {
     }
 }
 
-GLuint createShader(GLuint type, const std::string &fileName){
+GLuint createShader(GLuint type, const std::string &fileName)
+{
     GLuint shader = glCreateShader(type);
 
     // load up the file
@@ -241,7 +276,8 @@ GLuint createShader(GLuint type, const std::string &fileName){
 }
 
 /** shaders that use old vbo's */
-void initShadersOldVBOs(){
+void initShadersOldVBOs()
+{
 
     GLuint vert = createShader(GL_VERTEX_SHADER, BaseDirectory + "bound.vert");
     GLuint frag = createShader(GL_FRAGMENT_SHADER, BaseDirectory + "bound.frag");
@@ -291,7 +327,8 @@ void initBindlessVBOs() {
 }
 
 /** init shaders that use bindless VBOs */
-void initShadersBindless(){
+void initShadersBindless()
+{
     GLuint vert = createShader(GL_VERTEX_SHADER, BaseDirectory + "bindless.vert");
     GLuint frag = createShader(GL_FRAGMENT_SHADER, BaseDirectory + "bindless.frag");
 
@@ -319,12 +356,15 @@ void initShadersBindless(){
 }
 
 /** calls other init functions and may do some other init'ing as well */
-void init( int argc, char *argv[] ){
+void init( int argc, char *argv[] )
+{
     initGLFW();
     initGLEW();
     checkExtensions();
 
-    initDebug();    
+    initDebug();
+
+    initGLSettings();
 
     // get base directory for reading in files
     BaseDirectory = std::string(argv[0]);
@@ -344,59 +384,65 @@ void init( int argc, char *argv[] ){
     initShadersBindless();
 }
 
+void run_init_bound()
+{
+    glBindVertexArray(BoundVao);
+    glUseProgram(Bound_Program);
+}
+
 /** tells the gpu to run its commands again
  * since we are not drawing anything to the screen it would be odd to call this method "draw()" or "display()" 
  */
-void run_cycle_bound(){
-    glBindVertexArray(BoundVao);
-    glUseProgram(Bound_Program);
-
-    glDisable(GL_DEPTH_TEST);
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-    glClearColor( 0,0,0,0 );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
+void run_cycle_bound()
+{
     for (GLuint i=0; i<VBOCount; ++i){
         glBindBuffer(GL_ARRAY_BUFFER, VBO_Bound[i]);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0); // just position data
-        glDrawArrays(GL_TRIANGLES, 0, VertexCount);
+        glDrawArrays(GL_POINTS, 0, VertexCount);
     }
 }
 
-void run_cycle_bindless(){
+void run_init_bindless()
+{
     glBindVertexArray(BindlessVao);
-    glUseProgram(Bindless_Program);
+    glUseProgram(Bindless_Program);    
+}
 
-    GLsizeiptr vertex_bytes = sizeof(DataInit);
-
-    glClearColor( 0,0,0,0 );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+void run_cycle_bindless()
+{
+    static GLsizeiptr vertex_bytes = sizeof(DataInit);
     for (GLuint i=0; i<VBOCount; ++i){
         glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, VBO_Addrs[i], vertex_bytes);
-        glDrawArrays(GL_TRIANGLES, 0, VertexCount);
+        glDrawArrays(GL_POINTS, 0, VertexCount);
     }
 }
 
-void shutdown(){
+void shutdown()
+{
 }
 
+typedef void (APIENTRY *run_inits)();
 typedef void (APIENTRY *run_cycles)();
-void run_test( const string& test_name, run_cycles callback ){
-    int iteration_count = 10;
+void run_test( const string& test_name, run_inits init_callback, run_cycles render_callback )
+{
     int loop_counter = 0;
+
+    init_callback();
+
+    glfwSetTime(0);
     double start = glfwGetTime();
     double gpu_total_time = 0.0f;
 
     sp::gpuTimer gpuTimer;
     gpuTimer.init();
     
-    cout << "Starting " << test_name << " iterations" << endl;    
+    cout << "Starting " << test_name << " iterations" << endl;
     
-    /* Main loop */
-    while (loop_counter++ < iteration_count)
+    /* Main loop, see how many draw calls we can make within 1 second */
+    while ( (glfwGetTime() - start) < 1.0 )
     {
         gpuTimer.start();
-        callback();
+        render_callback();
         gpuTimer.end();
         gpu_total_time += gpuTimer.elaspedTime();
 
@@ -404,32 +450,30 @@ void run_test( const string& test_name, run_cycles callback ){
         glfwSwapBuffers(glfwWindow);
         glfwPollEvents();
 
-        /* Check if we are still running */
-        if (glfwWindowShouldClose(glfwWindow))
-            break;
+        // cout << ".";
+        // cout.flush();
 
-        cout << ".";
-        cout.flush();
+        loop_counter++;
     }
-    cout << "\n"
-         << "Finished " << test_name << " iterations\n"
+    cout << "Finished " << test_name << " iterations\n"
          << "\ttime to complete " << glfwGetTime() - start << "\n"
-         << "\tgpu time " << gpu_total_time << endl;
+         << "\tgpu time " << gpu_total_time * 1e-3f << "\n"
+         << "\tloop counter " << loop_counter << endl;
 
     cout << "Clearing out gpu queries..." << endl;
     double additional_time = 0.0;
     while (gpuTimer.activeQueries() > 0){
         additional_time += gpuTimer.elaspedTime();
     }
-    cout << "Additional Time: " << additional_time << endl;    
+    cout << "Additional Time: " << additional_time * 1e-3f << "\n" << endl;
 }
 
-int main( int argc, char *argv[]) {
+int main( int argc, char *argv[]) 
+{
     init(argc, argv);
 
-
-    run_test("Bound VBO's", run_cycle_bound);
-    run_test("Bindless VBO's", run_cycle_bindless);
+    run_test("Bound VBO's", run_init_bound, run_cycle_bound);
+    run_test("Bindless VBO's", run_init_bindless, run_cycle_bindless);
 
     shutdown();
     glfwSetWindowShouldClose(glfwWindow, 1);

@@ -66,7 +66,7 @@ void gpuTimer::end()
 
     // now wait for all the gpu commands to clear out
     glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
-    //glFlush();  // must call this manually when using waitsync
+    glFlush();  // must call this manually when using waitsync
 }
 
 double gpuTimer::elaspedTime()
@@ -94,7 +94,7 @@ double gpuTimer::elaspedTime()
 
                 // getting the difference
                 timer_elapsed = timer_end - timer_start;
-                time = timer_elapsed / 1e6f; // convert into milliseconds
+                time = timer_elapsed * 1e-6f; // convert into milliseconds
 
                 // clear values to be used again
                 queries[i].in_use = false;
