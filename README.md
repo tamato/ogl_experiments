@@ -1,6 +1,7 @@
 ###Requires a compiler that supports C++11 features:
 1. init'ing arrays
 2. vector::data()
+3. nullptr
 
 ###An nvidia card for nvidia specific extensions
 1. GL_NV_shader_buffer_load
@@ -29,3 +30,14 @@
 
 ####Windows:
 * Link a new project to the make file
+
+
+###Experiments
+####bindless_nv
+Compares bindless vbo's vrs traditional vbos
+####indirect
+Learning experiment on how to work with indirect rendering
+####depth_buffer
+Comparing different strategies on writing out to the depth buffer
+####round_trip
+Finding the amount of time it takes to send a texture to the gpu, write to it and then read it back

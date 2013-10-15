@@ -14,7 +14,7 @@
 #include <vector>
 #include <GL/glew.h>
 
-namespace sp
+namespace ogle
 {
     class gpuTimer
     {

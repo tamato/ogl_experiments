@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 # http://www.cmake.org/Wiki/CMake/Policies
-cmake_policy(VERSION 2.8) 
+cmake_policy(VERSION 2.8)
 
 project( performance_experiments )
 
@@ -19,7 +19,7 @@ list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
 ################################
-# Add common source 
+# Add common source
 set(COMMON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/common")
 include_directories(${COMMON_DIR})
 
@@ -57,6 +57,10 @@ link_directories(${GLFW_DIR}/src)
 
 set(GLFW_LIBRARY glfw)
 
+###########################################
+# Add GLM
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/glm)
+
 ################################
 # Add libraries to executables
 if(APPLE)
@@ -87,7 +91,7 @@ function(createExperiment NAME)
             TARGET ${NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy ${SHADER_FILE} ${DATA_DIR}
         )
-    endforeach()    
+    endforeach()
 
     target_link_libraries(${NAME} ${BINARY_FILES})
 endfunction(createExperiment)

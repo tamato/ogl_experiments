@@ -1,5 +1,5 @@
 /***************************************************
-    
+
     Demo app to see the speed difference between
     using bound vertex arrays and bindless
 
@@ -11,16 +11,16 @@
 
     On Ubuntu:
         Ubuntu 13.04
-        NVidia 
+        NVidia
             driver: 310.44
             card: GTX 550 ti
         OpenGL 4.3.0
             older vbo's:
-                10K VBO's, 6 verts per vbo = ~560 Draw/second
+                10K VBO's, 6 verts per vbo(GL_POINTS) = ~550 Draws/second
             bindless vbo's:
-                10K VBO's, 6 verts per vbo = ~600 Draw/second
+                10K VBO's, 6 verts per vbo(GL_POINTS) = ~1700 Draws/second
 
-****************************************************/    
+****************************************************/
 
 #include <iostream>
 #include <fstream>
@@ -65,15 +65,67 @@ namespace {
     map<int, string> OGLDebugSeverity;
     map<int, string> OGLDebugIDs;
 
-    vec3 DataInit[VertexCount];    
+    vec3 DataInit[VertexCount];
+
+    void debugOutput(
+        unsigned int source,
+        unsigned int type,
+        unsigned int id,
+        unsigned int severity,
+        int length,
+        const char* message,
+        void* userParam)
+    {
+
+        cout << "OGL Debugger Error: \n"
+             << "\tSource: "    << OGLDebugSource[source] << "\n"
+             << "\tType: "      << OGLDebugType[type] << "\n"
+             << "\tID: "        << OGLDebugIDs[id] << "\n"
+             << "\tSeverity: "  << OGLDebugSeverity[severity] << "\n"
+             << "\tMessage:"    << message
+             << endl;
+    }
+
+    /** Sets up opengl debugging capabilities */
+    void initDebug(){
+        #define GL_ENUM_TO_STRING(enum) #enum
+        OGLDebugSource[GL_DEBUG_SOURCE_API_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SOURCE_API_ARB);
+        OGLDebugSource[GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB);
+        OGLDebugSource[GL_DEBUG_SOURCE_SHADER_COMPILER_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SOURCE_SHADER_COMPILER_ARB);
+        OGLDebugSource[GL_DEBUG_SOURCE_THIRD_PARTY_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SOURCE_THIRD_PARTY_ARB);
+        OGLDebugSource[GL_DEBUG_SOURCE_APPLICATION_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SOURCE_APPLICATION_ARB);
+        OGLDebugSource[GL_DEBUG_SOURCE_OTHER_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SOURCE_OTHER_ARB);
+
+        OGLDebugType[GL_DEBUG_TYPE_ERROR_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_TYPE_ERROR_ARB);
+        OGLDebugType[GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB);
+        OGLDebugType[GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB);
+        OGLDebugType[GL_DEBUG_TYPE_PORTABILITY_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_TYPE_PORTABILITY_ARB);
+        OGLDebugType[GL_DEBUG_TYPE_PERFORMANCE_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_TYPE_PERFORMANCE_ARB);
+        OGLDebugType[GL_DEBUG_TYPE_OTHER_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_TYPE_OTHER_ARB);
+
+        OGLDebugSeverity[GL_DEBUG_SEVERITY_HIGH_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SEVERITY_HIGH_ARB);
+        OGLDebugSeverity[GL_DEBUG_SEVERITY_MEDIUM_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SEVERITY_MEDIUM_ARB);
+        OGLDebugSeverity[GL_DEBUG_SEVERITY_LOW_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SEVERITY_LOW_ARB);
+
+        OGLDebugIDs[GL_INVALID_ENUM] = GL_ENUM_TO_STRING(GL_INVALID_ENUM);
+        OGLDebugIDs[GL_INVALID_VALUE] = GL_ENUM_TO_STRING(GL_INVALID_VALUE);
+        OGLDebugIDs[GL_INVALID_OPERATION] = GL_ENUM_TO_STRING(GL_INVALID_OPERATION);
+        OGLDebugIDs[GL_STACK_OVERFLOW] = GL_ENUM_TO_STRING(GL_STACK_OVERFLOW);
+        OGLDebugIDs[GL_STACK_UNDERFLOW] = GL_ENUM_TO_STRING(GL_STACK_UNDERFLOW);
+        OGLDebugIDs[GL_OUT_OF_MEMORY] = GL_ENUM_TO_STRING(GL_OUT_OF_MEMORY);
+        #undef GL_ENUM_TO_STRING
+
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+        glDebugMessageCallbackARB(::debugOutput, nullptr);
+    }
 }
 
-void error_callback(int error, const char* description)
+void errorCallback(int error, const char* description)
 {
     cerr << description << endl;
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
@@ -82,7 +134,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 /** makes sure that we can use all the extensions we need for this app */
 void checkExtensions()
 {
-    /** 
+    /**
         the extesnsions that are going to be need are for bindless vbo's which are:
     */
     vector<string> extensions {
@@ -96,58 +148,6 @@ void checkExtensions()
         if (glfwExtensionSupported(extension.c_str()) == GL_FALSE)
             cerr << extension << " - is required and not supported on this machine." << endl;
     }
-}
-
-void debugOutput(
-    unsigned int source, 
-    unsigned int type, 
-    unsigned int id, 
-    unsigned int severity, 
-    int length, 
-    const char* message, 
-    void* userParam)
-{
-
-    cout << "OGL Debugger Error: \n"
-         << "\tSource: "    << OGLDebugSource[source] << "\n"
-         << "\tType: "      << OGLDebugType[type] << "\n"
-         << "\tID: "        << OGLDebugIDs[id] << "\n"
-         << "\tSeverity: "  << OGLDebugSeverity[severity] << "\n"
-         << "\tMessage:"    << message 
-         << endl;
-}
-
-/** Sets up opengl debugging capabilities */
-void initDebug(){
-    #define GL_ENUM_TO_STRING(enum) #enum
-    OGLDebugSource[GL_DEBUG_SOURCE_API_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SOURCE_API_ARB);
-    OGLDebugSource[GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB);
-    OGLDebugSource[GL_DEBUG_SOURCE_SHADER_COMPILER_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SOURCE_SHADER_COMPILER_ARB);
-    OGLDebugSource[GL_DEBUG_SOURCE_THIRD_PARTY_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SOURCE_THIRD_PARTY_ARB);
-    OGLDebugSource[GL_DEBUG_SOURCE_APPLICATION_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SOURCE_APPLICATION_ARB);
-    OGLDebugSource[GL_DEBUG_SOURCE_OTHER_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SOURCE_OTHER_ARB);
-
-    OGLDebugType[GL_DEBUG_TYPE_ERROR_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_TYPE_ERROR_ARB);
-    OGLDebugType[GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB);
-    OGLDebugType[GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB);
-    OGLDebugType[GL_DEBUG_TYPE_PORTABILITY_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_TYPE_PORTABILITY_ARB);
-    OGLDebugType[GL_DEBUG_TYPE_PERFORMANCE_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_TYPE_PERFORMANCE_ARB);
-    OGLDebugType[GL_DEBUG_TYPE_OTHER_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_TYPE_OTHER_ARB);
-
-    OGLDebugSeverity[GL_DEBUG_SEVERITY_HIGH_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SEVERITY_HIGH_ARB);
-    OGLDebugSeverity[GL_DEBUG_SEVERITY_MEDIUM_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SEVERITY_MEDIUM_ARB);
-    OGLDebugSeverity[GL_DEBUG_SEVERITY_LOW_ARB] = GL_ENUM_TO_STRING(GL_DEBUG_SEVERITY_LOW_ARB);
-
-    OGLDebugIDs[GL_INVALID_ENUM] = GL_ENUM_TO_STRING(GL_INVALID_ENUM);
-    OGLDebugIDs[GL_INVALID_VALUE] = GL_ENUM_TO_STRING(GL_INVALID_VALUE);
-    OGLDebugIDs[GL_INVALID_OPERATION] = GL_ENUM_TO_STRING(GL_INVALID_OPERATION);
-    OGLDebugIDs[GL_STACK_OVERFLOW] = GL_ENUM_TO_STRING(GL_STACK_OVERFLOW);
-    OGLDebugIDs[GL_STACK_UNDERFLOW] = GL_ENUM_TO_STRING(GL_STACK_UNDERFLOW);
-    OGLDebugIDs[GL_OUT_OF_MEMORY] = GL_ENUM_TO_STRING(GL_OUT_OF_MEMORY);
-    #undef GL_ENUM_TO_STRING
-
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
-    glDebugMessageCallbackARB(debugOutput, nullptr);
 }
 
 void initGLSettings()
@@ -172,7 +172,7 @@ void initGLFW()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    // glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
     glfwWindow = glfwCreateWindow( 400, 400, "Bindless NV Example", NULL, NULL );
     if (!glfwWindow)
@@ -189,8 +189,8 @@ void initGLFW()
     glViewport( 0, 0, (GLsizei)width, (GLsizei)height );
 
     glfwSetTime( 0.0 );
-    glfwSetKeyCallback(glfwWindow, key_callback);
-    glfwSetErrorCallback(error_callback);
+    glfwSetKeyCallback(glfwWindow, keyCallback);
+    glfwSetErrorCallback(errorCallback);
 }
 
 /** inits glew for us */
@@ -199,16 +199,16 @@ void initGLEW()
     glewExperimental=GL_TRUE;
     GLenum err = glewInit();
     if (err != GLEW_OK) {
-        /// if it fails becuase there is no current opengl version, 
+        /// if it fails here, its becuase there is no current opengl version,
         /// don't call glewInit() until after a context has been made current.
         fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
         exit( EXIT_FAILURE );
     }
-    glGetError();    
+    glGetError();
 }
 
 /** init some plain jane VBO's */
-void initOldVBOs() 
+void initOldVBOs()
 {
     // get some safe default data
     vec3 bl(-1.0f, -1.0f, 0.0f);
@@ -310,7 +310,7 @@ void initBindlessVBOs() {
     glGenVertexArrays(1, &BindlessVao);
     glBindVertexArray(BindlessVao);
     glVertexAttribFormatNV(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3));
-    
+
     glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
     glEnableVertexAttribArray(0); // positions
 
@@ -362,7 +362,7 @@ void init( int argc, char *argv[] )
     initGLEW();
     checkExtensions();
 
-    initDebug();
+    ::initDebug();
 
     initGLSettings();
 
@@ -384,16 +384,16 @@ void init( int argc, char *argv[] )
     initShadersBindless();
 }
 
-void run_init_bound()
+void runInitBound()
 {
     glBindVertexArray(BoundVao);
     glUseProgram(Bound_Program);
 }
 
 /** tells the gpu to run its commands again
- * since we are not drawing anything to the screen it would be odd to call this method "draw()" or "display()" 
+ * since we are not drawing anything to the screen it would be odd to call this method "draw()" or "display()"
  */
-void run_cycle_bound()
+void runCycleBound()
 {
     for (GLuint i=0; i<VBOCount; ++i){
         glBindBuffer(GL_ARRAY_BUFFER, VBO_Bound[i]);
@@ -402,13 +402,13 @@ void run_cycle_bound()
     }
 }
 
-void run_init_bindless()
+void runInitBindless()
 {
     glBindVertexArray(BindlessVao);
-    glUseProgram(Bindless_Program);    
+    glUseProgram(Bindless_Program);
 }
 
-void run_cycle_bindless()
+void runCycleBindless()
 {
     static GLsizeiptr vertex_bytes = sizeof(DataInit);
     for (GLuint i=0; i<VBOCount; ++i){
@@ -419,11 +419,18 @@ void run_cycle_bindless()
 
 void shutdown()
 {
+    glDeleteProgram(Bindless_Program);
+    glDeleteBuffers(VBOCount, VBO_Bindless.data());
+    glDeleteVertexArrays(1, &BindlessVao);
+
+    glDeleteProgram(Bound_Program);
+    glDeleteBuffers(VBOCount, VBO_Bound.data());
+    glDeleteVertexArrays(1, &BoundVao);
 }
 
 typedef void (APIENTRY *run_inits)();
 typedef void (APIENTRY *run_cycles)();
-void run_test( const string& test_name, run_inits init_callback, run_cycles render_callback )
+void runTest( const string& test_name, run_inits init_callback, run_cycles render_callback )
 {
     int loop_counter = 0;
 
@@ -433,11 +440,11 @@ void run_test( const string& test_name, run_inits init_callback, run_cycles rend
     double start = glfwGetTime();
     double gpu_total_time = 0.0f;
 
-    sp::gpuTimer gpuTimer;
+    ogle::gpuTimer gpuTimer;
     gpuTimer.init();
-    
+
     cout << "Starting " << test_name << " iterations" << endl;
-    
+
     /* Main loop, see how many draw calls we can make within 1 second */
     while ( (glfwGetTime() - start) < 1.0 )
     {
@@ -468,12 +475,12 @@ void run_test( const string& test_name, run_inits init_callback, run_cycles rend
     cout << "Additional Time: " << additional_time * 1e-3f << "\n" << endl;
 }
 
-int main( int argc, char *argv[]) 
+int main( int argc, char *argv[])
 {
     init(argc, argv);
 
-    run_test("Bound VBO's", run_init_bound, run_cycle_bound);
-    run_test("Bindless VBO's", run_init_bindless, run_cycle_bindless);
+    runTest("Bound VBO's", runInitBound, runCycleBound);
+    runTest("Bindless VBO's", runInitBindless, runCycleBindless);
 
     shutdown();
     glfwSetWindowShouldClose(glfwWindow, 1);

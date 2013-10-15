@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-using namespace sp;
+using namespace ogle;
 
 gpuTimer::gpuTimer()
 {
@@ -30,7 +30,7 @@ void gpuTimer::init()
         qt.end   = q[i * 2 + 1];
         qt.in_use = false;
         queries.push_back(qt);
-    }    
+    }
 }
 
 void gpuTimer::start()
