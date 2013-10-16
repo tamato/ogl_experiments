@@ -1,0 +1,10 @@
+#!/bin/sh
+
+if [ -n "$1" ]; then
+    git add .
+    git commit -m "$1"
+    echo TGHPW!1
+    git push
+else
+    echo Add a comment to the commit.
+fi
