@@ -1,0 +1,10 @@
+{
+	"folders":
+	[
+		{
+			"path": "./",
+            "folder_exclude_patterns": ["bin", "CMakeFiles"],
+            "file_exclude_patterns": ["Makefile", "cmake_*"]
+		}
+	]
+}

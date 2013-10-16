@@ -1,8 +1,16 @@
 bin
+
+common/CMakeFiles
+common/Makefile
+common/cmake_install.cmake
+
 experiments/*/CMakeFiles
 experiments/*/Makefile
 experiments/*/cmake_install.cmake
 
+CMakeFiles
+Makefile
+cmake_install.cmake
+
 *.sublime-workspace
-my_git
 my_cmake
