@@ -1,13 +1,14 @@
-###Requires a compiler that supports C++11 features:
+####Requirements to run this experiments
+##Requires a compiler that supports C++11 features:
 1. init'ing arrays
 2. vector::data()
 3. nullptr
 
-###An nvidia card for nvidia specific extensions
+##A nvidia card for nvidia specific extensions
 1. GL_NV_shader_buffer_load
 2. GL_NV_vertex_buffer_unified_memory
 
-###A video card that supports these extensions
+##A video card that supports these extensions
 1. GL_ARB_separate_shader_objects
 2. GL_ARB_timer_query
 3. GL_ARB_debug_output
