@@ -33,22 +33,25 @@ float float_resolution(const glm::vec4& pt)
     return log(C*Far + 1.0f) / ( float(pow(2, Bits) - 1) * C / (C*pt.w + 1.0f));
 }
 
-void test(const std::string& name, const glm::vec4& pt )
+void test(const glm::vec4& pt )
 {
     glm::vec4 clip_pt = Projection * pt;
     float normal_z = clip_pt.z / clip_pt.w;
 
-    cout << "Test " << test << " clipspace z: " << clip_pt.z << endl;
-    cout << "\tNormal Depth " << normal_z << endl;
-    cout << "\tLogrithmic Depth " << log_depth(clip_pt) << endl;
-    cout << "\tResolution at this depth " << float_resolution(clip_pt) << endl;
+    cout.precision(2);
+    cout.setf(ios::fixed);
+    cout << "Clipspace z: " << clip_pt.z
+         << "\tNormalDepth " << normal_z
+         << "\tLogDetph " << log_depth(clip_pt);
+    cout.precision(10);
+    // Float point resolution is how much a number needs to change by inorder to be noticable
+    cout << "\tFloating point resolution " << float_resolution(clip_pt) << endl;
 }
 
 int main(int argc, char *argv[])
 {
     cout << "Near " << Near << " Far " << Far << endl;
-    test("A", glm::vec4(0,0,-1,1));
-    test("B", glm::vec4(0,0,-20,1));
-    test("C", glm::vec4(0,0,-99,1));
+    for (float i=Near; i<Far; i+=1)
+        test(glm::vec4(0,0,-1.0 * i,1));
     exit( EXIT_SUCCESS );
 }
