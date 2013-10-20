@@ -12,6 +12,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+using namespace std;
+
 namespace
 {
     int Bits = 24;
@@ -34,10 +36,19 @@ float float_resolution(const glm::vec4& pt)
 void test(const std::string& name, const glm::vec4& pt )
 {
     glm::vec4 clip_pt = Projection * pt;
-    float ndc_z = clip_pt.z / clip_pt.w;
+    float normal_z = clip_pt.z / clip_pt.w;
+
+    cout << "Test " << test << " clipspace z: " << clip_pt.z << endl;
+    cout << "\tNormal Depth " << normal_z << endl;
+    cout << "\tLogrithmic Depth " << log_depth(clip_pt) << endl;
+    cout << "\tResolution at this depth " << float_resolution(clip_pt) << endl;
 }
 
 int main(int argc, char *argv[])
 {
+    cout << "Near " << Near << " Far " << Far << endl;
+    test("A", glm::vec4(0,0,-1,1));
+    test("B", glm::vec4(0,0,-20,1));
+    test("C", glm::vec4(0,0,-99,1));
     exit( EXIT_SUCCESS );
 }
