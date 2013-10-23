@@ -7,6 +7,13 @@
     Then once that is working, the cube will be instanced to draw 4 time
     taking an even amount of space on the screen (1 in each quadrant)
     Then any multiple of 4.
+
+    The number of times the cube will be drawn is controlled by the size of
+    the framebuffer the fullscreen quad is being "drawn" with.
+    The drawn is in quotes because the quad is not actually drawn at all.
+    The framebuffer used with the quad has does not write out to the texture attached to it
+    However, in the fragment shader atmoic writes are being used to write to a buffer object
+    that holds the command arguments that controls how many objects to draw.
 */
 #include <iostream>
 #include <vector>
@@ -32,7 +39,7 @@ namespace {
     int WindowWidth = 800;
     int WindowHeight = 640;
 
-    // namespace
+    // namespace for indirect command related properties
     namespace ic { // ic == indirect_commands
         GLuint TextureID = 0;
         GLuint FramebufferID = 0;
@@ -40,6 +47,54 @@ namespace {
         GLsizei TextureSize = 1;
         GLsizei Count = TextureSize*TextureSize;      // # of verts to draw
     }
+
+    namespace vao
+    {
+        enum type
+        {
+            CUBE,
+            QUAD,
+            MAX
+        };
+    }
+
+    namespace buffer
+    {
+        enum type
+        {
+            CUBE,
+            QUAD,
+            INDIRECT,
+            MAX
+        };
+    }
+
+    namespace program
+    {
+        enum type
+        {
+            CUBE,
+            QUAD,
+            MAX
+        };
+    }
+
+    GLuint VAO[vao::MAX];
+    GLuint Buffer[buffer::MAX];
+    GLuint Program[program::MAX];
+
+    const GLsizei QuadVertCount = 4;
+    const GLsizei QuadSize = QuadVertCount * sizeof(glm::vec2);
+    const glm::vec2 QuadVerts[QuadVertCount] = {
+        glm::vec2(-1,-1),
+        glm::vec2( 1,-1),
+        glm::vec2( 1, 1),
+        glm::vec2(-1, 1)
+    };
+
+    GLsizei CubeVertCount = 0;
+    GLsizei CubeSize = 0;
+    glm::vec3 CubeVerts;
 }
 
 void errorCallback(int error, const char* description)
@@ -235,6 +290,16 @@ void bindFBO()
     checkFBO();
 }
 
+void initFullScreenQuad()
+{
+
+}
+
+void initQuadShader()
+{
+
+}
+
 void initGLSettings()
 {
 }
@@ -248,6 +313,7 @@ void init( int argc, char *argv[])
 
     initTexture();
     initFramebuffer();
+    initFullScreenQuad();
 }
 
 void shutdown()

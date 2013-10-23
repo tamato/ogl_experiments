@@ -138,10 +138,17 @@ void checkExtensions()
         the extesnsions that are going to be need are for bindless vbo's which are:
     */
     vector<string> extensions {
+        // refer to opengl objects by gpu address
          "GL_NV_shader_buffer_load"             // http://www.opengl.org/registry/specs/NV/shader_buffer_load.txt
         ,"GL_NV_vertex_buffer_unified_memory"   // http://developer.download.nvidia.com/opengl/specs/GL_NV_vertex_buffer_unified_memory.txt
+
+        // mix and match shader stages into a pipeline object
         ,"GL_ARB_separate_shader_objects"       // http://www.opengl.org/registry/specs/ARB/separate_shader_objects.txt
+
+        // queries the gpu for time stamps
         ,"GL_ARB_timer_query"                   // http://www.opengl.org/registry/specs/ARB/timer_query.txt
+
+        // debug printing support
         ,"GL_ARB_debug_output"                  // http://www.opengl.org/registry/specs/ARB/debug_output.txt
     };
     for (auto extension : extensions) {
