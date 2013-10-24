@@ -16,6 +16,7 @@
     that holds the command arguments that controls how many objects to draw.
 */
 #include <iostream>
+#include <fstream>
 #include <vector>
 
 #define GLM_FORCE_RADIANS
@@ -79,9 +80,31 @@ namespace {
         };
     }
 
-    GLuint VAO[vao::MAX];
-    GLuint Buffer[buffer::MAX];
-    GLuint Program[program::MAX];
+    namespace pipeline
+    {
+        enum type
+        {
+            CUBE,
+            QUAD,
+            MAX
+        };
+    }
+
+    namespace addr
+    {
+        enum type
+        {
+            CUBE,
+            QUAD,
+            MAX
+        };
+    }
+
+    GLuint VAO[vao::MAX] = {0};
+    GLuint Buffer[buffer::MAX] = {0};
+    GLuint64 BufferAddr[addr::MAX] = {0};
+    GLuint Program[program::MAX] = {0};
+    GLuint Pipeline[pipeline::MAX] = {0};
 
     const GLsizei QuadVertCount = 4;
     const GLsizei QuadSize = QuadVertCount * sizeof(glm::vec2);
@@ -110,6 +133,8 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 void initGLFW()
 {
+    glfwSetErrorCallback(errorCallback);
+
     /* Init GLFW */
     if( !glfwInit() )
         exit( EXIT_FAILURE );
@@ -134,7 +159,6 @@ void initGLFW()
 
     glfwSetTime( 0.0 );
     glfwSetKeyCallback(glfwWindow, keyCallback);
-    glfwSetErrorCallback(errorCallback);
 }
 
 void initGLEW()
@@ -167,21 +191,17 @@ void checkExtensions()
         // indirect rendering (issue rendering commands from the gpu)
         ,"GL_ARB_draw_indirect"                 // http://www.opengl.org/registry/specs/ARB/draw_indirect.txt
         ,"GL_ARB_base_instance"                 // http://www.opengl.org/registry/specs/ARB/base_instance.txt
+
+        // for atomic operations on the gpu
+        ,"GL_ARB_shader_atomic_counters"        // http://www.opengl.org/registry/specs/ARB/shader_atomic_counters.txt
+
+        // clear buffer objects (why this hasn't always existed is surprising)
+        ,"GL_ARB_clear_buffer_object"           // http://www.opengl.org/registry/specs/ARB/clear_buffer_object.txt
     };
     for (auto extension : extensions) {
         if (glfwExtensionSupported(extension.c_str()) == GL_FALSE)
             cerr << extension << " - is required but not supported on this machine." << endl;
     }
-}
-
-void initCube()
-{
-
-}
-
-void initShader()
-{
-    /** using a shader pipeline object, yay modern openGL objects! */
 }
 
 /**
@@ -290,22 +310,127 @@ void bindFBO()
     checkFBO();
 }
 
-void initFullScreenQuad()
+void createGLObjects()
 {
+    glGenVertexArrays(::vao::MAX, VAO);
+    glGenBuffers(::buffer::MAX, Buffer);
+    glGenProgramPipelines(::pipeline::MAX, Pipeline);
+}
 
+GLuint createShader(GLuint type, const std::string &fileName)
+{
+    GLuint shader = glCreateShader(type);
+
+    // load up the file
+    std::ifstream inf(fileName);
+    if (!inf.is_open()) {
+        cerr << "Failed to open " << fileName << endl;
+        assert(0);
+    }
+
+    std::string source;
+    inf.seekg(0, std::ios::end);
+    source.resize(inf.tellg());
+    inf.seekg(0, std::ios::beg);
+    inf.read(&source[0], source.size());
+    inf.close();
+
+    const char *c_str = source.c_str();
+    glShaderSource(shader, 1, &c_str, NULL);
+    glCompileShader(shader);
+
+    int status;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+    if (status == GL_FALSE)
+    {
+        const int maxLen = 1000;
+        int len;
+        char errorBuffer[maxLen]{0};
+        glGetShaderInfoLog(shader, maxLen, &len, errorBuffer);
+        std::cerr   << "Shader Compile with erros:\n"
+                    << errorBuffer << std::endl;
+        assert(0);
+    }
+
+    return shader;
+}
+
+void checkShaderLinkage( const GLuint& program)
+{
+    int status;
+    glGetProgramiv(program, GL_LINK_STATUS, &status);
+    if (status == GL_FALSE)
+    {
+        const int maxLen = 1000;
+        int len;
+        char errorBuffer[maxLen]{0};
+        glGetProgramInfoLog(program, maxLen, &len, errorBuffer);
+        std::cerr   << "Shader Linked with erros:\n"
+                    << errorBuffer << std::endl;
+        assert(0);
+    }
 }
 
 void initQuadShader()
 {
+    GLuint vert = createShader(GL_VERTEX_SHADER, BaseDirectory + "quad.vert");
+    GLuint frag = createShader(GL_FRAGMENT_SHADER, BaseDirectory + "quad.frag");
 
+    Program[program::QUAD] = glCreateProgram();
+    glProgramParameteri(Program[program::QUAD], GL_PROGRAM_SEPARABLE, GL_TRUE);
+    glAttachShader(Program[program::QUAD], vert);
+    glAttachShader(Program[program::QUAD], frag);
+    glLinkProgram(Program[program::QUAD]);
+    glDeleteShader(vert);
+    glDeleteShader(frag);
+
+    checkShaderLinkage(Program[program::QUAD]);
+    glUseProgramStages(Pipeline[pipeline::QUAD], GL_VERTEX_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, Program[program::QUAD]);
+
+    // GLuint buffer_idx = 0;
+    // GLint atomic_buffer_count = 0;
+    // GLint size = 0;
+    // glGetProgramiv(Program[program::QUAD], GL_ACTIVE_ATOMIC_COUNTER_BUFFERS, &atomic_buffer_count);
+    // glGetActiveAtomicCounterBufferiv(Program[program::QUAD], 0, GL_ATOMIC_COUNTER_BUFFER_DATA_SIZE, &size);
+    // cout << "Count: " << atomic_buffer_count << " " << " size " << size << endl;
 }
 
-void initGLSettings()
+void initQuadGeometry()
 {
+    glBindVertexArray(VAO[vao::QUAD]);
+    glVertexAttribFormatNV(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2));
+
+    glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
+    glEnableVertexAttribArray(0); // positions
+
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::QUAD]);
+    glBufferData(GL_ARRAY_BUFFER, QuadSize, (const GLvoid*)&QuadVerts[0], GL_STATIC_DRAW);
+
+    // get the buffer addr and then make it resident
+    glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::QUAD]);
+    glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
+}
+
+void initAtomicBuffer()
+{
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
+    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), nullptr, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+}
+
+void initFullScreenQuad()
+{
+    initQuadShader();
+    initQuadGeometry();
+    initAtomicBuffer();
 }
 
 void init( int argc, char *argv[])
 {
+    // get base directory for reading in files
+    BaseDirectory = std::string(argv[0]);
+    BaseDirectory += "_data/";
+
     initGLFW();
     initGLEW();
     checkExtensions();
@@ -313,7 +438,48 @@ void init( int argc, char *argv[])
 
     initTexture();
     initFramebuffer();
+
+    createGLObjects();
+
     initFullScreenQuad();
+}
+
+void renderquad()
+{
+    // Clear out the atmoic counter
+    GLuint clear_data = 0;
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
+    glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &clear_data);
+
+    // make sure not to waste cycles, since we are not drawing anything, turn off depth and color writes
+    //glDisable(GL_DEPTH_TEST);
+    //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    glClearColor( 1,0,0,1 );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+    // using the following framebuffer, update the atmoic counter
+    bindFBO();
+
+    // and now "draw" the fullscreen quad to the frame buffer to update the atmoic counter
+    // for each pixel attempted to be drawn.
+    glBindProgramPipeline(Pipeline[pipeline::QUAD]);
+    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
+    glBindProgramPipeline(0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void runloop()
+{
+    while (!glfwWindowShouldClose(glfwWindow)){
+        glfwSwapBuffers(glfwWindow);
+        glfwPollEvents();
+
+        renderquad();
+
+        // test if buffer was written too
+
+    }
 }
 
 void shutdown()
@@ -321,14 +487,21 @@ void shutdown()
     glDeleteFramebuffers(1, &::ic::FramebufferID);
     glDeleteTextures(1, &::ic::TextureID);
 
+    glDeleteProgramPipelines(::pipeline::MAX, Pipeline);
+    glDeleteBuffers(::buffer::MAX, Buffer);
+    glDeleteVertexArrays(::vao::MAX, VAO);
+
     ogle::Debug::shutdown();
+
     glfwSetWindowShouldClose(glfwWindow, 1);
+    glfwDestroyWindow(glfwWindow);
     glfwTerminate();
 }
 
 int main( int argc, char *argv[])
 {
     init(argc, argv);
+    runloop();
     shutdown();
     exit( EXIT_SUCCESS );
 }

@@ -36,7 +36,7 @@ void debugOutput(
          << "\tType: "      << Debug::typeError(type) << "\n"
          << "\tID: "        << Debug::idError(id) << "\n"
          << "\tSeverity: "  << Debug::severityError(severity) << "\n"
-         << "\tMessage:"    << message
+         << "\tMessage: "   << message
          << endl;
 }
 
