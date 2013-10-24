@@ -414,7 +414,7 @@ void initQuadGeometry()
 void initAtomicBuffer()
 {
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
-    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), NULL, GL_DYNAMIC_COPY);
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 }
 
@@ -452,10 +452,10 @@ void renderquad()
     glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &clear_data);
 
     // make sure not to waste cycles, since we are not drawing anything, turn off depth and color writes
-    //glDisable(GL_DEPTH_TEST);
-    //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-    glClearColor( 1,0,0,1 );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    glDisable(GL_DEPTH_TEST);
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    //glClearColor( 0,0,0,0 );
+    //glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     // using the following framebuffer, update the atmoic counter
     bindFBO();
@@ -463,10 +463,14 @@ void renderquad()
     // and now "draw" the fullscreen quad to the frame buffer to update the atmoic counter
     // for each pixel attempted to be drawn.
     glBindProgramPipeline(Pipeline[pipeline::QUAD]);
+    glBindVertexArray(VAO[vao::QUAD]);
+    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, Buffer[buffer::INDIRECT]);
     glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
+    glBindVertexArray(0);
     glBindProgramPipeline(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 }
 
 void runloop()
@@ -477,8 +481,12 @@ void runloop()
 
         renderquad();
 
-        // test if buffer was written too
-
+        // test if buffer was written to
+        GLuint *counter;
+        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
+        counter = (GLuint*)glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT);
+        cout << "Counter : " << counter[0] << endl;
+        glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
     }
 }
 
