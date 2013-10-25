@@ -1,6 +1,6 @@
 #version 430
 
-in vec2 Position;
+in vec4 Position;
 
 out gl_PerVertex
 {
@@ -8,5 +8,5 @@ out gl_PerVertex
 };
 
 void main() {
-    gl_Position = vec4(Position, 0, 1);
+    gl_Position = Position;
 }

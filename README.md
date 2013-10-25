@@ -12,6 +12,10 @@
 1. GL_ARB_separate_shader_objects
 2. GL_ARB_timer_query
 3. GL_ARB_debug_output
+4. GL_ARB_draw_indirect
+5. GL_ARB_base_instance
+6. GL_ARB_shader_atomic_counters
+7. GL_ARB_clear_buffer_object
 
 ###How to build [GLEW](https://github.com/nigels-com/glew):
 ####Unix:

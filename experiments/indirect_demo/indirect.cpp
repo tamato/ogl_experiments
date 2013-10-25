@@ -4,14 +4,14 @@
     Indirect rendering is when rendering commands are issued from the GPU.
 
     To practice, a cube will be drawn in the center of the screen
-    Then once that is working, the cube will be instanced to draw 4 time
+    Then once that is working, the cube will be instanced to draw 4 times
     taking an even amount of space on the screen (1 in each quadrant)
     Then any multiple of 4.
 
     The number of times the cube will be drawn is controlled by the size of
     the framebuffer the fullscreen quad is being "drawn" with.
     The drawn is in quotes because the quad is not actually drawn at all.
-    The framebuffer used with the quad has does not write out to the texture attached to it
+    The framebuffer used with the quad does not write out to the texture attached to it
     However, in the fragment shader atmoic writes are being used to write to a buffer object
     that holds the command arguments that controls how many objects to draw.
 */
@@ -112,7 +112,7 @@ namespace {
         glm::vec2(-1,-1),
         glm::vec2( 1,-1),
         glm::vec2( 1, 1),
-        glm::vec2(-1, 1)
+        glm::vec2(-1, 1),
     };
 
     GLsizei CubeVertCount = 0;
@@ -178,7 +178,7 @@ void initGLEW()
 void checkExtensions()
 {
     vector<string> extensions {
-        // refer to opengl objects by gpu address
+        // refer to buffer objects by gpu address
          "GL_NV_shader_buffer_load"             // http://www.opengl.org/registry/specs/NV/shader_buffer_load.txt
         ,"GL_NV_vertex_buffer_unified_memory"   // http://developer.download.nvidia.com/opengl/specs/GL_NV_vertex_buffer_unified_memory.txt
 
@@ -414,7 +414,7 @@ void initQuadGeometry()
 void initAtomicBuffer()
 {
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
-    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), NULL, GL_DYNAMIC_COPY);
+    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), NULL, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 }
 
@@ -451,11 +451,11 @@ void renderquad()
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
     glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &clear_data);
 
-    // make sure not to waste cycles, since we are not drawing anything, turn off depth and color writes
-    glDisable(GL_DEPTH_TEST);
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-    //glClearColor( 0,0,0,0 );
-    //glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    // the main goal of this render pass is to write to the atomic counter, turn off what we are not going to use.
+    // glDisable(GL_DEPTH_TEST);
+    // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    glClearColor( 0,0,0,0 );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     // using the following framebuffer, update the atmoic counter
     bindFBO();
@@ -465,8 +465,10 @@ void renderquad()
     glBindProgramPipeline(Pipeline[pipeline::QUAD]);
     glBindVertexArray(VAO[vao::QUAD]);
     glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, Buffer[buffer::INDIRECT]);
+
     glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
+
     glBindVertexArray(0);
     glBindProgramPipeline(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -476,9 +478,6 @@ void renderquad()
 void runloop()
 {
     while (!glfwWindowShouldClose(glfwWindow)){
-        glfwSwapBuffers(glfwWindow);
-        glfwPollEvents();
-
         renderquad();
 
         // test if buffer was written to
@@ -487,6 +486,9 @@ void runloop()
         counter = (GLuint*)glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT);
         cout << "Counter : " << counter[0] << endl;
         glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
+
+        glfwSwapBuffers(glfwWindow);
+        glfwPollEvents();
     }
 }
 
