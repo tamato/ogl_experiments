@@ -64,6 +64,7 @@ namespace {
         enum type
         {
             CUBE,
+            CUBE_INDICES,
             QUAD,
             INDIRECT,
             MAX
@@ -117,7 +118,6 @@ namespace {
 
     GLsizei CubeVertCount = 0;
     GLsizei CubeSize = 0;
-    glm::vec3 CubeVerts;
 }
 
 void errorCallback(int error, const char* description)
@@ -425,6 +425,48 @@ void initFullScreenQuad()
     initAtomicBuffer();
 }
 
+void initCubeShader()
+{
+    GLuint vert = createShader(GL_VERTEX_SHADER, BaseDirectory + "cube.vert");
+    GLuint frag = createShader(GL_FRAGMENT_SHADER, BaseDirectory + "cube.frag");
+
+    Program[program::CUBE] = glCreateProgram();
+    glProgramParameteri(Program[program::CUBE], GL_PROGRAM_SEPARABLE, GL_TRUE);
+    glAttachShader(Program[program::CUBE], vert);
+    glAttachShader(Program[program::CUBE], frag);
+    glLinkProgram(Program[program::CUBE]);
+    glDeleteShader(vert);
+    glDeleteShader(frag);
+
+    checkShaderLinkage(Program[program::CUBE]);
+    glUseProgramStages(Pipeline[pipeline::CUBE], GL_VERTEX_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, Program[program::CUBE]);
+}
+
+void initCubeGeometry()
+{
+    glBindVertexArray(VAO[vao::CUBE]);
+    glVertexAttribFormatNV(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3));
+    glVertexAttribFormatNV(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3));
+
+    glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
+    glEnableClientState(GL_ELEMENT_ARRAY_UNIFIED_NV);
+    glEnableVertexAttribArray(0); // positions
+    glEnableVertexAttribArray(1); // normals
+
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::CUBE]);
+    glBufferData(GL_ARRAY_BUFFER, CubeSize, (const GLvoid*)&QuadVerts[0], GL_STATIC_DRAW);
+
+    // get the buffer addr and then make it resident
+    glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::CUBE]);
+    glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
+}
+
+void initCube()
+{
+    initCubeShader();
+    initCubeGeometry();
+}
+
 void init( int argc, char *argv[])
 {
     // get base directory for reading in files
@@ -442,6 +484,7 @@ void init( int argc, char *argv[])
     createGLObjects();
 
     initFullScreenQuad();
+    initCube();
 }
 
 void renderquad()

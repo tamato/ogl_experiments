@@ -18,16 +18,18 @@ namespace ogle {
     public:
         CubeGenerator();
         void scale(float scale);
-        void tessellation_density(unsigned int stacks, unsigned int slices, unsigned int rows);
+        void tessellation_density(unsigned int stacks, unsigned int slices);
         void tessellation_density(unsigned int density);
         void generate();
 
     private:
         unsigned int Stacks;
         unsigned int Slices;
-        unsigned int Rows;
         float Scale;
+
+    public:
         std::vector<glm::vec3> Positions;
+        std::vector<unsigned int> Indices;
     };
 }
 
