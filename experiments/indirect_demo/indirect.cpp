@@ -30,6 +30,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "cubegenerator.h"
 #include "debug.h"
 
 using namespace std;
@@ -64,6 +65,7 @@ namespace {
         enum type
         {
             CUBE,
+            CUBE_NORMALS,
             CUBE_INDICES,
             QUAD,
             INDIRECT,
@@ -95,7 +97,9 @@ namespace {
     {
         enum type
         {
-            CUBE,
+            CUBE_POSITIONS,
+            CUBE_NORMALS,
+            CUBE_INDICES,
             QUAD,
             MAX
         };
@@ -117,7 +121,9 @@ namespace {
     };
 
     GLsizei CubeVertCount = 0;
-    GLsizei CubeSize = 0;
+    GLsizei CubeVertSize = 0;
+    GLsizei CubeIndiceSize = 0;
+    GLsizei CubeIndiceCount = 0;
 }
 
 void errorCallback(int error, const char* description)
@@ -145,7 +151,7 @@ void initGLFW()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
-    glfwWindow = glfwCreateWindow( WindowWidth, WindowHeight, "Bindless NV Example", NULL, NULL );
+    glfwWindow = glfwCreateWindow( WindowWidth, WindowHeight, "Indirect Demo", NULL, NULL );
     if (!glfwWindow)
     {
         glfwTerminate();
@@ -445,20 +451,42 @@ void initCubeShader()
 void initCubeGeometry()
 {
     glBindVertexArray(VAO[vao::CUBE]);
-    glVertexAttribFormatNV(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3));
-    glVertexAttribFormatNV(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3));
+    glVertexAttribFormatNV(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3)*2);
+    glVertexAttribFormatNV(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3)*2);
 
     glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
     glEnableClientState(GL_ELEMENT_ARRAY_UNIFIED_NV);
     glEnableVertexAttribArray(0); // positions
     glEnableVertexAttribArray(1); // normals
 
-    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::CUBE]);
-    glBufferData(GL_ARRAY_BUFFER, CubeSize, (const GLvoid*)&QuadVerts[0], GL_STATIC_DRAW);
+    ogle::CubeGenerator geom;
+    geom.generate();
 
+    CubeVertCount = geom.Positions.size();
+    CubeVertSize = ( sizeof(glm::vec3) + sizeof(glm::vec3) ) * CubeVertCount;
+
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::CUBE]);
+    glBufferData(GL_ARRAY_BUFFER, CubeVertSize, (const GLvoid*)&geom.Positions[0], GL_STATIC_DRAW);
     // get the buffer addr and then make it resident
-    glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::CUBE]);
+    glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::CUBE_POSITIONS]);
     glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
+
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::CUBE_NORMALS]);
+    glBufferData(GL_ARRAY_BUFFER, CubeVertSize, (const GLvoid*)&geom.Normals[0], GL_STATIC_DRAW);
+    glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::CUBE_NORMALS]);
+    glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
+
+    CubeIndiceCount = geom.Indices.size();
+    CubeIndiceSize = sizeof(unsigned int) * CubeIndiceCount;
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer[buffer::CUBE_INDICES]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, CubeIndiceSize, (const GLvoid*)&geom.Indices[0], GL_STATIC_DRAW);
+    glGetBufferParameterui64vNV(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::CUBE_INDICES]);
+    glMakeBufferResidentNV(GL_ELEMENT_ARRAY_BUFFER, GL_READ_ONLY);
+
+    glFinish(); // ensure that the geometry makes it to the server before the client side memory goes away.
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void initCube()

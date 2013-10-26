@@ -29,6 +29,7 @@ namespace ogle {
 
     public:
         std::vector<glm::vec3> Positions;
+        std::vector<glm::vec3> Normals;
         std::vector<unsigned int> Indices;
     };
 }

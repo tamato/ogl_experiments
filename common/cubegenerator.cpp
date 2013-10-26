@@ -4,9 +4,9 @@ using namespace ogle;
 using namespace std;
 
 CubeGenerator::CubeGenerator()
-    : Stacks(0)
-    , Slices(0)
-    , Scale(0)
+    : Stacks(2)
+    , Slices(2)
+    , Scale(1)
 {
 
 }
@@ -35,6 +35,9 @@ void CubeGenerator::generate()
     Positions.clear();
     Positions.resize(Stacks*Slices*6); // 6  == sides to a cube
 
+    Normals.clear();
+    Normals.resize(Stacks*Slices*6);
+
     float scale = Scale * 2.0f;
 
     // generate a plane that the verts will be based off of
@@ -51,7 +54,9 @@ void CubeGenerator::generate()
 
             float z = scale * 1;
             Positions[offset0 + u + v*Slices] = glm::vec3(x, y, z);
+            Normals  [offset0 + u + v*Slices] = glm::vec3(0, 0, 1);
             Positions[offset1 + u + v*Slices] = glm::vec3(x, y,-z);
+            Normals  [offset1 + u + v*Slices] = glm::vec3(0, 0,-1);
         }
     }
 
@@ -64,7 +69,9 @@ void CubeGenerator::generate()
             float y = plane[u + v*Slices].y;
             float z = plane[u + v*Slices].x;
             Positions[offset0 + u + v*Slices] = glm::vec3( x, y, z);
+            Normals  [offset0 + u + v*Slices] = glm::vec3( 1, 0, 0);
             Positions[offset1 + u + v*Slices] = glm::vec3(-x, y, z);
+            Normals  [offset1 + u + v*Slices] = glm::vec3(-1, 0, 0);
         }
     }
 
@@ -77,7 +84,9 @@ void CubeGenerator::generate()
             float y = scale * 1;
             float z = plane[u + v*Slices].y;
             Positions[offset0 + u + v*Slices] = glm::vec3(x, y, z);
+            Normals  [offset0 + u + v*Slices] = glm::vec3(0, 1, 0);
             Positions[offset1 + u + v*Slices] = glm::vec3(x,-y, z);
+            Normals  [offset1 + u + v*Slices] = glm::vec3(0, 1, 0);
         }
     }
 

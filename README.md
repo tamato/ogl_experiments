@@ -17,6 +17,11 @@
 6. GL_ARB_shader_atomic_counters
 7. GL_ARB_clear_buffer_object
 
+####Dependencies
+1. GLEW
+2. GLFW
+3. GLM
+
 ###How to build [GLEW](https://github.com/nigels-com/glew):
 ####Unix:
 * make extensions (to generate src/glew.c [GLEW](https://github.com/nigels-com/glew))
