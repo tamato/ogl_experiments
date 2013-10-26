@@ -508,7 +508,7 @@ void setDataDir(int argc, char *argv[])
     DataDirectory = exe_dir + "../data/" + exe_name + "/";
 }
 
-void init( int argc, char *argv[])
+void init( int argc, char *argv[] )
 {
     setDataDir(argc, argv);
     initGLFW();
