@@ -25,6 +25,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <algorithm>
 #include <vector>
 #include <cassert>
 #include <map>
@@ -39,7 +40,7 @@ using namespace std;
 
 /** throw things into the unnamed namespace */
 namespace {
-    std::string BaseDirectory; // ends with a forward slash
+    std::string DataDirectory; // ends with a forward slash
     GLFWwindow *glfwWindow;
 
     const int QuadVerts = 6;
@@ -286,8 +287,8 @@ GLuint createShader(GLuint type, const std::string &fileName)
 void initShadersOldVBOs()
 {
 
-    GLuint vert = createShader(GL_VERTEX_SHADER, BaseDirectory + "bound.vert");
-    GLuint frag = createShader(GL_FRAGMENT_SHADER, BaseDirectory + "bound.frag");
+    GLuint vert = createShader(GL_VERTEX_SHADER, DataDirectory + "bound.vert");
+    GLuint frag = createShader(GL_FRAGMENT_SHADER, DataDirectory + "bound.frag");
 
     Bound_Program = glCreateProgram();
     glAttachShader(Bound_Program, vert);
@@ -336,8 +337,8 @@ void initBindlessVBOs() {
 /** init shaders that use bindless VBOs */
 void initShadersBindless()
 {
-    GLuint vert = createShader(GL_VERTEX_SHADER, BaseDirectory + "bindless.vert");
-    GLuint frag = createShader(GL_FRAGMENT_SHADER, BaseDirectory + "bindless.frag");
+    GLuint vert = createShader(GL_VERTEX_SHADER, DataDirectory + "bindless.vert");
+    GLuint frag = createShader(GL_FRAGMENT_SHADER, DataDirectory + "bindless.frag");
 
     Bindless_Program = glCreateProgram();
     glAttachShader(Bindless_Program, vert);
@@ -362,9 +363,22 @@ void initShadersBindless()
     glUseProgram(Bindless_Program);
 }
 
+void setDataDir(int argc, char *argv[])
+{
+    // get base directory for reading in files
+    std::string path = argv[0];
+    std::replace(path.begin(), path.end(), '\\', '/');
+    size_t dir_idx = path.rfind("/")+1;
+    std::string exe_dir = path.substr(0, dir_idx);
+    std::string exe_name = path.substr(dir_idx);
+    DataDirectory = exe_dir + "../data/" + exe_name + "/";
+}
+
 /** calls other init functions and may do some other init'ing as well */
 void init( int argc, char *argv[] )
 {
+    setDataDir(argc, argv);
+
     initGLFW();
     initGLEW();
     checkExtensions();
@@ -372,10 +386,6 @@ void init( int argc, char *argv[] )
     ::initDebug();
 
     initGLSettings();
-
-    // get base directory for reading in files
-    BaseDirectory = std::string(argv[0]);
-    BaseDirectory += "_data/";
 
     // now get to the real inits.
     // init some VBO's the normal way

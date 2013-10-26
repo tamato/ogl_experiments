@@ -72,8 +72,8 @@ endif(APPLE)
 ################################
 # function to create a project for the sample in the solution
 function(createExperiment NAME)
-    set(DATA_DIR ${CMAKE_BINARY_DIR}/bin/${NAME}_data)
-    file(MAKE_DIRECTORY ${DATA_DIR})
+    # set(DATA_DIR ${CMAKE_BINARY_DIR}/bin/${NAME}_data)
+    # file(MAKE_DIRECTORY ${DATA_DIR})
 
     file(GLOB COMMON_SOURCE ${COMMON_DIR}/*.cpp)
     file(GLOB PROJECT_SOURCE *.cpp)
@@ -86,12 +86,12 @@ function(createExperiment NAME)
     source_group("Shader Files" FILES ${PROJECT_SHADER})
 
     add_executable(${NAME} ${COMMON_SOURCE} ${PROJECT_SOURCE} ${PROJECT_INLINE} ${PROJECT_HEADER} ${PROJECT_TEXT})
-    foreach(SHADER_FILE ${PROJECT_SHADER})
-        add_custom_command(
-            TARGET ${NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy ${SHADER_FILE} ${DATA_DIR}
-        )
-    endforeach()
+    # foreach(SHADER_FILE ${PROJECT_SHADER})
+    #     add_custom_command(
+    #         TARGET ${NAME} POST_BUILD
+    #         COMMAND ${CMAKE_COMMAND} -E copy ${SHADER_FILE} ${DATA_DIR}
+    #     )
+    # endforeach()
 
     target_link_libraries(${NAME} ${BINARY_FILES})
 endfunction(createExperiment)

@@ -18,6 +18,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <string>
+#include <algorithm>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_CXX11
@@ -36,7 +38,7 @@
 using namespace std;
 
 namespace {
-    std::string BaseDirectory; // ends with a forward slash
+    std::string DataDirectory; // ends with a forward slash
     GLFWwindow *glfwWindow;
     int WindowWidth = 800;
     int WindowHeight = 640;
@@ -379,8 +381,8 @@ void checkShaderLinkage( const GLuint& program)
 
 void initQuadShader()
 {
-    GLuint vert = createShader(GL_VERTEX_SHADER, BaseDirectory + "quad.vert");
-    GLuint frag = createShader(GL_FRAGMENT_SHADER, BaseDirectory + "quad.frag");
+    GLuint vert = createShader(GL_VERTEX_SHADER, DataDirectory + "quad.vert");
+    GLuint frag = createShader(GL_FRAGMENT_SHADER, DataDirectory + "quad.frag");
 
     Program[program::QUAD] = glCreateProgram();
     glProgramParameteri(Program[program::QUAD], GL_PROGRAM_SEPARABLE, GL_TRUE);
@@ -433,8 +435,8 @@ void initFullScreenQuad()
 
 void initCubeShader()
 {
-    GLuint vert = createShader(GL_VERTEX_SHADER, BaseDirectory + "cube.vert");
-    GLuint frag = createShader(GL_FRAGMENT_SHADER, BaseDirectory + "cube.frag");
+    GLuint vert = createShader(GL_VERTEX_SHADER, DataDirectory + "cube.vert");
+    GLuint frag = createShader(GL_FRAGMENT_SHADER, DataDirectory + "cube.frag");
 
     Program[program::CUBE] = glCreateProgram();
     glProgramParameteri(Program[program::CUBE], GL_PROGRAM_SEPARABLE, GL_TRUE);
@@ -495,12 +497,20 @@ void initCube()
     initCubeGeometry();
 }
 
-void init( int argc, char *argv[])
+void setDataDir(int argc, char *argv[])
 {
     // get base directory for reading in files
-    BaseDirectory = std::string(argv[0]);
-    BaseDirectory += "_data/";
+    std::string path = argv[0];
+    std::replace(path.begin(), path.end(), '\\', '/');
+    size_t dir_idx = path.rfind("/")+1;
+    std::string exe_dir = path.substr(0, dir_idx);
+    std::string exe_name = path.substr(dir_idx);
+    DataDirectory = exe_dir + "../data/" + exe_name + "/";
+}
 
+void init( int argc, char *argv[])
+{
+    setDataDir(argc, argv);
     initGLFW();
     initGLEW();
     checkExtensions();
