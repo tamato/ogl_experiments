@@ -69,6 +69,7 @@ namespace {
             CUBE,
             CUBE_NORMALS,
             CUBE_INDICES,
+            CUBE_TRANSFORM,
             QUAD,
             INDIRECT,
             MAX
@@ -107,6 +108,14 @@ namespace {
         };
     }
 
+    namespace uniformblock
+    {
+        enum type
+        {
+            TRANSFORM
+        };
+    }
+
     GLuint VAO[vao::MAX] = {0};
     GLuint Buffer[buffer::MAX] = {0};
     GLuint64 BufferAddr[addr::MAX] = {0};
@@ -126,6 +135,7 @@ namespace {
     GLsizei CubeVertSize = 0;
     GLsizei CubeIndiceSize = 0;
     GLsizei CubeIndiceCount = 0;
+    GLuint  CubeTransformBlockIdx = 0;
 }
 
 void errorCallback(int error, const char* description)
@@ -448,6 +458,12 @@ void initCubeShader()
 
     checkShaderLinkage(Program[program::CUBE]);
     glUseProgramStages(Pipeline[pipeline::CUBE], GL_VERTEX_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, Program[program::CUBE]);
+
+    // UniformMaterial = glGetUniformBlockIndex(ProgramName, "material");
+    // use the name of the block(struct) to get its index
+    CubeTransformBlockIdx = glGetUniformBlockIndex(Program[program::CUBE], "transform");
+    // this should only be called once, tell the program what binding location to match with the block index
+    glUniformBlockBinding(Program[program::CUBE], CubeTransformBlockIdx, uniformblock::TRANSFORM);    // sets state in the glsl program
 }
 
 void initCubeGeometry()
@@ -491,10 +507,29 @@ void initCubeGeometry()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
+void initCubeUniforms()
+{
+    GLint blockSize = 0;
+    glGetActiveUniformBlockiv(
+        Program[program::CUBE],
+        CubeTransformBlockIdx,
+        GL_UNIFORM_BLOCK_DATA_SIZE,
+        &blockSize);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, Buffer[buffer::CUBE_TRANSFORM]);
+    glBufferData(GL_UNIFORM_BUFFER, blockSize, 0, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    // Attach the buffer to UBO binding point glf::semantic::uniform::TRANSFORM0
+    // use this in conjuction with glBindBuffer for operations similar to glBufferData
+    // glBindBufferBase(GL_UNIFORM_BUFFER, uniformblock::TRANSFORM, Buffer[buffer::CUBE_TRANSFORM]); // sets state in opengl
+}
+
 void initCube()
 {
     initCubeShader();
     initCubeGeometry();
+    initCubeUniforms();
 }
 
 void setDataDir(int argc, char *argv[])
@@ -562,11 +597,11 @@ void runloop()
         renderquad();
 
         // test if buffer was written to
-        GLuint *counter;
-        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
-        counter = (GLuint*)glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT);
-        cout << "Counter : " << counter[0] << endl;
-        glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
+        // GLuint *counter;
+        // glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
+        // counter = (GLuint*)glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT);
+        // cout << "Counter : " << counter[0] << endl;
+        // glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
 
         glfwSwapBuffers(glfwWindow);
         glfwPollEvents();
