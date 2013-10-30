@@ -456,29 +456,30 @@ void initCubeShader()
 void initCubeGeometry()
 {
     glBindVertexArray(VAO[vao::CUBE]);
-    glVertexAttribFormatNV(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3));
-    // glVertexAttribFormatNV(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3)*2);
+    glVertexAttribFormatNV(0, 3, GL_FLOAT, GL_FALSE, 0);
+    glVertexAttribFormatNV(1, 3, GL_FLOAT, GL_FALSE, 0);
 
     glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
     glEnableClientState(GL_ELEMENT_ARRAY_UNIFIED_NV);
     glEnableVertexAttribArray(0); // positions
-    // glEnableVertexAttribArray(1); // normals
+    glEnableVertexAttribArray(1); // normals
 
     ogle::CubeGenerator geom;
+    // geom.tessellation_density(16);
     geom.generate();
 
     CubeVertCount = geom.Positions.size();
-    CubeVertSize = ( sizeof(glm::vec3) + sizeof(glm::vec3) ) * CubeVertCount;
+    CubeVertSize = sizeof(glm::vec3) * CubeVertCount;
 
     glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::CUBE]);
     glBufferData(GL_ARRAY_BUFFER, CubeVertSize, (const GLvoid*)&geom.Positions[0], GL_STATIC_DRAW);
     glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::CUBE_POSITIONS]);
     glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
 
-    // glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::CUBE_NORMALS]);
-    // glBufferData(GL_ARRAY_BUFFER, CubeVertSize, (const GLvoid*)&geom.Normals[0], GL_STATIC_DRAW);
-    // glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::CUBE_NORMALS]);
-    // glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::CUBE_NORMALS]);
+    glBufferData(GL_ARRAY_BUFFER, CubeVertSize, (const GLvoid*)&geom.Normals[0], GL_STATIC_DRAW);
+    glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::CUBE_NORMALS]);
+    glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
 
     CubeIndiceCount = geom.Indices.size();
     CubeIndiceSize = sizeof(unsigned int) * CubeIndiceCount;
@@ -507,7 +508,8 @@ void initCubeUniforms()
         Program[program::CUBE],
         CubeTransformBlockIdx,
         GL_UNIFORM_BLOCK_DATA_SIZE,
-        &blockSize);
+        &blockSize
+    );
 
     glBindBuffer(GL_UNIFORM_BUFFER, Buffer[buffer::CUBE_TRANSFORM]);
     glBufferData(GL_UNIFORM_BUFFER, blockSize, 0, GL_DYNAMIC_DRAW);
@@ -558,12 +560,9 @@ void renderquad()
     glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &clear_data);
 
     // the main goal of this render pass is to write to the atomic counter, turn off what we are not going to use.
-    // glDisable(GL_DEPTH_TEST);
-    // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-    glClearColor( 0,0,0,0 );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-    // using the following framebuffer, update the atmoic counter
+    // using the following framebuffer, update the atomic counter
     bindFBO();
 
     // and now "draw" the fullscreen quad to the frame buffer to update the atmoic counter
@@ -571,6 +570,7 @@ void renderquad()
     glBindProgramPipeline(Pipeline[pipeline::QUAD]);
     glBindVertexArray(VAO[vao::QUAD]);
     glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, Buffer[buffer::INDIRECT]);
+    glVertexAttribFormatNV(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2)); // <- need to be here?
 
     glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
     glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
@@ -583,18 +583,32 @@ void renderquad()
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 }
 
-void rednercube()
+void rendercube()
 {
-    // glDisable(GL_DEPTH_TEST);
-    // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    {
+    GLuint clear_data = 0;
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
+    glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &clear_data);
+    }
+
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glClearColor( 0,1,0,0 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     glDisable(GL_CULL_FACE);
 
-    glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
+    {
+    glDisable(GL_DEPTH_TEST);
+    }
+
+    glm::mat4 Projection = glm::mat4(1.0f);
+    // glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
     glm::mat4 View = glm::mat4(1.0f);
     glm::mat4 Model = glm::mat4(1.0f);
-    // Model[3] = glm::vec4(0,0,-20,1);
+
+    static float y=0;
+    y += 0.003f;
+    Model = glm::rotate(Model, y, glm::vec3(0.f, 1.f, 0.f));
+    Model[3][3] = 15.0f;
     glm::mat4 MVP = Projection * View * Model;
 
     // todo: figure out if bindbufferbase is needed at all if the binding point is already set and we are using glbindbuffer
@@ -606,17 +620,21 @@ void rednercube()
 
     glBindProgramPipeline(Pipeline[pipeline::CUBE]);
     glBindVertexArray(VAO[vao::CUBE]);
-
     glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
+
     {
-        glBindProgramPipeline(Pipeline[pipeline::QUAD]);
-        glBindVertexArray(VAO[vao::QUAD]);
-        glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
+    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, Buffer[buffer::INDIRECT]);
     }
 
-    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::CUBE_POSITIONS], CubeVertSize);
-    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 1, BufferAddr[addr::CUBE_NORMALS], CubeVertSize);
+    // these only need to be done if the vertex format changes, which it does between drawing the quad and this
+    // Does this need to be done, being that VAO's are used?
+    {
+    glVertexAttribFormatNV(0, 3, GL_FLOAT, GL_FALSE, 0);
+    glVertexAttribFormatNV(1, 3, GL_FLOAT, GL_FALSE, 0);
+    }
+
+    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::CUBE_POSITIONS], CubeVertCount);
+    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 1, BufferAddr[addr::CUBE_NORMALS], CubeVertCount);
 
     glEnableClientState(GL_ELEMENT_ARRAY_UNIFIED_NV);
     glBufferAddressRangeNV(GL_ELEMENT_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::CUBE_INDICES], CubeIndiceCount);
@@ -626,13 +644,22 @@ void rednercube()
     glDisableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
     glBindVertexArray(0);
     glBindProgramPipeline(0);
+
+    {
+        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+        GLuint *counter;
+        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
+        counter = (GLuint*)glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT);
+        cout << "Counter : " << counter[0] << endl;
+        glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
+    }
 }
 
 void runloop()
 {
     while (!glfwWindowShouldClose(glfwWindow)){
         renderquad();
-        rednercube();
+        rendercube();
 
         // test if buffer was written to
         // GLuint *counter;

@@ -5,9 +5,9 @@ using namespace std;
 using namespace ogle;
 
 CubeGenerator::CubeGenerator()
-    : Stacks(49)
-    , Slices(21)
-    , Scale(1)
+    : Stacks(2)
+    , Slices(2)
+    , Scale(10)
 {
 
 }
@@ -70,6 +70,7 @@ void CubeGenerator::generate()
             float x = Scale * 1;
             float y = plane[u + v*Slices][1];
             float z = plane[u + v*Slices][0];
+
             Positions[offset0 + u + v*Slices] = glm::vec3(-x, y, z);
             Normals  [offset0 + u + v*Slices] = glm::vec3( 1, 0, 0);
             Positions[offset1 + u + v*Slices] = glm::vec3( x, y,-z);
