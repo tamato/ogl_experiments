@@ -1,7 +1,7 @@
 #version 430
 
 layout(location = 0) in vec4 Position;
-layout(location = 1) in vec3 Normal;
+layout(location = 1) in vec4 Normal;
 
 // using std140 to match sure the stride with the mat4
 // is something sane.
@@ -10,13 +10,13 @@ layout(location = 1) in vec3 Normal;
 layout(std140) uniform transform
 {
     mat4 MVP;
-    mat3 Normal;
+    mat4 Normal;
 } Transform;
 
 out gl_PerVertex
 {
     vec4 gl_Position;
-    vec3 Normal;
+    vec4 Normal;
 } Out;
 
 void main() {

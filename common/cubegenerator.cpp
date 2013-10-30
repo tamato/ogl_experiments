@@ -1,11 +1,12 @@
 #include "cubegenerator.h"
+#include <iostream>
 
-using namespace ogle;
 using namespace std;
+using namespace ogle;
 
 CubeGenerator::CubeGenerator()
-    : Stacks(2)
-    , Slices(2)
+    : Stacks(49)
+    , Slices(21)
     , Scale(1)
 {
 
@@ -48,62 +49,67 @@ void CubeGenerator::generate()
     unsigned int offset1 = Stacks*Slices;
     for (unsigned int v=0; v<Stacks; ++v) {
         for (unsigned int u=0; u<Slices; ++u) {
-            float x = scale * (u / float(Slices) - 0.5f);
-            float y = scale * (v / float(Stacks) - 0.5f);
+            float x = scale * (u / float(Slices-1) - 0.5f);
+            float y = scale * (v / float(Stacks-1) - 0.5f);
+            float z = Scale * 1;
+
             plane[u + v*Slices] = glm::vec2(x,y);
 
-            float z = scale * 1;
-            Positions[offset0 + u + v*Slices] = glm::vec3(x, y, z);
-            Normals  [offset0 + u + v*Slices] = glm::vec3(0, 0, 1);
-            Positions[offset1 + u + v*Slices] = glm::vec3(x, y,-z);
-            Normals  [offset1 + u + v*Slices] = glm::vec3(0, 0,-1);
+            Positions[offset0 + u + v*Slices] = glm::vec3( x, y, z);
+            Normals  [offset0 + u + v*Slices] = glm::vec3( 0, 0, 1);
+            Positions[offset1 + u + v*Slices] = glm::vec3(-x, y,-z);
+            Normals  [offset1 + u + v*Slices] = glm::vec3( 1, 1, 0);
         }
     }
 
     // x faces
-    offset0 += Stacks*Slices;
-    offset1 += Stacks*Slices;
+    offset0 += Stacks*Slices*2;
+    offset1 += Stacks*Slices*2;
     for (unsigned int v=0; v<Stacks; ++v) {
         for (unsigned int u=0; u<Slices; ++u) {
-            float x = scale * 1;
-            float y = plane[u + v*Slices].y;
-            float z = plane[u + v*Slices].x;
-            Positions[offset0 + u + v*Slices] = glm::vec3( x, y, z);
+            float x = Scale * 1;
+            float y = plane[u + v*Slices][1];
+            float z = plane[u + v*Slices][0];
+            Positions[offset0 + u + v*Slices] = glm::vec3(-x, y, z);
             Normals  [offset0 + u + v*Slices] = glm::vec3( 1, 0, 0);
-            Positions[offset1 + u + v*Slices] = glm::vec3(-x, y, z);
-            Normals  [offset1 + u + v*Slices] = glm::vec3(-1, 0, 0);
+            Positions[offset1 + u + v*Slices] = glm::vec3( x, y,-z);
+            Normals  [offset1 + u + v*Slices] = glm::vec3( 0, 1, 1);
         }
     }
 
     // y faces
-    offset0 += Stacks*Slices;
-    offset1 += Stacks*Slices;
+    offset0 += Stacks*Slices*2;
+    offset1 += Stacks*Slices*2;
     for (unsigned int v=0; v<Stacks; ++v) {
         for (unsigned int u=0; u<Slices; ++u) {
-            float x = plane[u + v*Slices].x;
-            float y = scale * 1;
-            float z = plane[u + v*Slices].y;
-            Positions[offset0 + u + v*Slices] = glm::vec3(x, y, z);
+            float x = plane[u + v*Slices][0];
+            float y = Scale * 1;
+            float z = plane[u + v*Slices][1];
+
+            Positions[offset0 + u + v*Slices] = glm::vec3(x, y,-z);
             Normals  [offset0 + u + v*Slices] = glm::vec3(0, 1, 0);
             Positions[offset1 + u + v*Slices] = glm::vec3(x,-y, z);
-            Normals  [offset1 + u + v*Slices] = glm::vec3(0, 1, 0);
+            Normals  [offset1 + u + v*Slices] = glm::vec3(1, 0, 1);
         }
     }
 
+
     // 6 faces to a cube, 2 triangles each face, 3 verts per triangle
     Indices.clear();
-    Indices.resize(Stacks*Slices*6*2*3);
+    Indices.resize( (Stacks-1)*(Slices-1)*6*2*3);
     unsigned int counter = 0;
     for (unsigned int k=0; k<6; ++k){
-        for (unsigned int j=0; j<Stacks; ++j){
+        for (unsigned int j=0; j<Stacks-1; ++j){
             for (unsigned int i=0; i<Slices-1; ++i) {
-                Indices[counter + 0] = counter+0;
-                Indices[counter + 1] = counter+1;
-                Indices[counter + 2] = counter+Slices;
+                unsigned int idx = i + j*Slices + k*Stacks*Slices;
+                Indices[counter + 0] = idx+0;
+                Indices[counter + 1] = idx+1;
+                Indices[counter + 2] = idx+Slices;
 
-                Indices[counter + 3] = counter+1;
-                Indices[counter + 4] = counter+Slices+1;
-                Indices[counter + 5] = counter+Slices;
+                Indices[counter + 3] = idx+Slices;
+                Indices[counter + 4] = idx+1;
+                Indices[counter + 5] = idx+Slices+1;
+
                 counter += 6;
             }
         }
