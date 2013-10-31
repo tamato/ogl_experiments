@@ -466,7 +466,7 @@ void initCubeGeometry()
     glEnableVertexAttribArray(1); // normals
 
     ogle::CubeGenerator geom;
-    geom.tessellation_density(6);
+    geom.tessellation_density(60);
     geom.generate();
 
     CubeVertCount = geom.Positions.size();
