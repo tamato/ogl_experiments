@@ -1,5 +1,6 @@
 #include "cubegenerator.h"
 #include <iostream>
+#include <glm/gtx/string_cast.hpp>
 
 using namespace std;
 using namespace ogle;
@@ -7,7 +8,7 @@ using namespace ogle;
 CubeGenerator::CubeGenerator()
     : Stacks(2)
     , Slices(2)
-    , Scale(10)
+    , Scale(1)
 {
 
 }
@@ -58,7 +59,7 @@ void CubeGenerator::generate()
             Positions[offset0 + u + v*Slices] = glm::vec3( x, y, z);
             Normals  [offset0 + u + v*Slices] = glm::vec3( 0, 0, 1);
             Positions[offset1 + u + v*Slices] = glm::vec3(-x, y,-z);
-            Normals  [offset1 + u + v*Slices] = glm::vec3( 1, 1, 0);
+            Normals  [offset1 + u + v*Slices] = glm::vec3( 0, 0,-1);
         }
     }
 
@@ -74,7 +75,7 @@ void CubeGenerator::generate()
             Positions[offset0 + u + v*Slices] = glm::vec3(-x, y, z);
             Normals  [offset0 + u + v*Slices] = glm::vec3( 1, 0, 0);
             Positions[offset1 + u + v*Slices] = glm::vec3( x, y,-z);
-            Normals  [offset1 + u + v*Slices] = glm::vec3( 0, 1, 1);
+            Normals  [offset1 + u + v*Slices] = glm::vec3(-1, 0, 0);
         }
     }
 
@@ -90,7 +91,8 @@ void CubeGenerator::generate()
             Positions[offset0 + u + v*Slices] = glm::vec3(x, y,-z);
             Normals  [offset0 + u + v*Slices] = glm::vec3(0, 1, 0);
             Positions[offset1 + u + v*Slices] = glm::vec3(x,-y, z);
-            Normals  [offset1 + u + v*Slices] = glm::vec3(1, 0, 1);
+            Normals  [offset1 + u + v*Slices] = glm::vec3(0,-1, 0);
+            // cout << glm::to_string(Positions[offset1 + u + v*Slices]) << endl;
         }
     }
 

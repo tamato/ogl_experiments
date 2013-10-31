@@ -1,8 +1,7 @@
 #version 430
 
 layout(location = 0) in vec4 Position;
-layout(location = 1) in vec4 Normal;
-layout(binding = 0, offset = 0) uniform atomic_uint Atomic;
+layout(location = 1) in vec3 Normal;
 
 // using std140 to match sure the stride with the mat4
 // is something sane.
@@ -11,7 +10,7 @@ layout(binding = 0, offset = 0) uniform atomic_uint Atomic;
 layout(std140) uniform transform
 {
     mat4 MVP;
-    mat4 Normal;
+    mat3 Normal;
 } Transform;
 
 out gl_PerVertex
@@ -19,11 +18,9 @@ out gl_PerVertex
     vec4 gl_Position;
 };
 
-layout(location = 2) out vec4 normal;
+layout(location = 2) out vec3 normal;
 
 void main() {
     gl_Position = Transform.MVP * Position;
-    normal = Normal;
-
-    atomicCounterIncrement(Atomic);
+    normal = /*Transform.Normal **/ Normal;
 }

@@ -132,10 +132,11 @@ namespace {
     };
 
     GLsizei CubeVertCount = 0;
-    GLsizei CubeVertSize = 0;
-    GLsizei CubeIndiceSize = 0;
+    GLsizei CubeVertByteCount = 0;
+    GLsizei CubeIndiceByteCount = 0;
     GLsizei CubeIndiceCount = 0;
     GLuint  CubeTransformBlockIdx = 0;
+    double  DeltaTime = 0;
 }
 
 void errorCallback(int error, const char* description)
@@ -465,26 +466,26 @@ void initCubeGeometry()
     glEnableVertexAttribArray(1); // normals
 
     ogle::CubeGenerator geom;
-    // geom.tessellation_density(16);
+    geom.tessellation_density(6);
     geom.generate();
 
     CubeVertCount = geom.Positions.size();
-    CubeVertSize = sizeof(glm::vec3) * CubeVertCount;
+    CubeVertByteCount = sizeof(glm::vec3) * CubeVertCount;
 
     glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::CUBE]);
-    glBufferData(GL_ARRAY_BUFFER, CubeVertSize, (const GLvoid*)&geom.Positions[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, CubeVertByteCount, (const GLvoid*)&geom.Positions[0], GL_STATIC_DRAW);
     glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::CUBE_POSITIONS]);
     glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
 
     glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::CUBE_NORMALS]);
-    glBufferData(GL_ARRAY_BUFFER, CubeVertSize, (const GLvoid*)&geom.Normals[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, CubeVertByteCount, (const GLvoid*)&geom.Normals[0], GL_STATIC_DRAW);
     glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::CUBE_NORMALS]);
     glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
 
     CubeIndiceCount = geom.Indices.size();
-    CubeIndiceSize = sizeof(unsigned int) * CubeIndiceCount;
+    CubeIndiceByteCount = sizeof(unsigned int) * CubeIndiceCount;
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer[buffer::CUBE_INDICES]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, CubeIndiceSize, (const GLvoid*)&geom.Indices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, CubeIndiceByteCount, (const GLvoid*)&geom.Indices[0], GL_STATIC_DRAW);
     glGetBufferParameterui64vNV(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::CUBE_INDICES]);
     glMakeBufferResidentNV(GL_ELEMENT_ARRAY_BUFFER, GL_READ_ONLY);
 
@@ -534,6 +535,12 @@ void setDataDir(int argc, char *argv[])
     DataDirectory = exe_dir + "../data/" + exe_name + "/";
 }
 
+void setGLSettings()
+{
+    // glCullFace(GL_BACK);
+    // glEnable(GL_CULL_FACE);
+}
+
 void init( int argc, char *argv[] )
 {
     setDataDir(argc, argv);
@@ -549,10 +556,13 @@ void init( int argc, char *argv[] )
 
     initFullScreenQuad();
     initCube();
+
+    setGLSettings();
 }
 
 void renderquad()
 {
+    glDisable(GL_DEPTH_TEST);
 
     // Clear out the atmoic counter
     GLuint clear_data = 0;
@@ -581,85 +591,66 @@ void renderquad()
     glBindProgramPipeline(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+    glEnable(GL_DEPTH_TEST);
 }
 
 void rendercube()
 {
-    {
-    GLuint clear_data = 0;
-    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
-    glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &clear_data);
-    }
-
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glClearColor( 0,1,0,0 );
+    glClearColor(0.3,0.5,0.7,0);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    glDisable(GL_CULL_FACE);
 
-    {
-    glDisable(GL_DEPTH_TEST);
-    }
-
-    glm::mat4 Projection = glm::mat4(1.0f);
-    // glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
+    glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 1.f, 100.0f);
     glm::mat4 View = glm::mat4(1.0f);
     glm::mat4 Model = glm::mat4(1.0f);
+    glm::mat3 Normal = glm::mat3(1.0f);
 
-    static float y=0;
-    y += 0.003f;
-    Model = glm::rotate(Model, y, glm::vec3(0.f, 1.f, 0.f));
-    Model[3][3] = 15.0f;
+    static double y=0;
+    y += 1.0 * DeltaTime;
+    Model = glm::rotate(Model, (float)y, glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(Model, (float)y, glm::vec3(1.f, 0.f, 0.f));
+    View[3][2] = -10.0f;
     glm::mat4 MVP = Projection * View * Model;
 
     // todo: figure out if bindbufferbase is needed at all if the binding point is already set and we are using glbindbuffer
     glBindBufferBase(GL_UNIFORM_BUFFER, uniformblock::TRANSFORM, Buffer[buffer::CUBE_TRANSFORM]);
     glBindBuffer(GL_UNIFORM_BUFFER, Buffer[buffer::CUBE_TRANSFORM]);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), &MVP[0][0]);
-    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), &Model[0][0]);
+    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat3), &Normal[0][0]);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     glBindProgramPipeline(Pipeline[pipeline::CUBE]);
     glBindVertexArray(VAO[vao::CUBE]);
-    glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
 
+    // If these are not enabled and gpu addresses are attempted to be read from, the appilcation will crash.
     {
-    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, Buffer[buffer::INDIRECT]);
+        glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
+        glEnableClientState(GL_ELEMENT_ARRAY_UNIFIED_NV);
+
+        // the following is left as a reminder, that VertexAttribFromats are stored in VAO's
+    // glVertexAttribFormatNV(0, 3, GL_FLOAT, GL_FALSE, 0);
+    // glVertexAttribFormatNV(1, 3, GL_FLOAT, GL_FALSE, 0);
     }
 
-    // these only need to be done if the vertex format changes, which it does between drawing the quad and this
-    // Does this need to be done, being that VAO's are used?
-    {
-    glVertexAttribFormatNV(0, 3, GL_FLOAT, GL_FALSE, 0);
-    glVertexAttribFormatNV(1, 3, GL_FLOAT, GL_FALSE, 0);
-    }
+    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::CUBE_POSITIONS], CubeVertByteCount);
+    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 1, BufferAddr[addr::CUBE_NORMALS], CubeVertByteCount);
 
-    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::CUBE_POSITIONS], CubeVertCount);
-    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 1, BufferAddr[addr::CUBE_NORMALS], CubeVertCount);
-
-    glEnableClientState(GL_ELEMENT_ARRAY_UNIFIED_NV);
-    glBufferAddressRangeNV(GL_ELEMENT_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::CUBE_INDICES], CubeIndiceCount);
-    glDrawElements(GL_TRIANGLES, CubeIndiceCount, GL_UNSIGNED_INT, nullptr);
+    glBufferAddressRangeNV(GL_ELEMENT_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::CUBE_INDICES], CubeIndiceByteCount);
+    glDrawRangeElements(GL_TRIANGLES, 0, CubeVertCount, CubeIndiceCount, GL_UNSIGNED_INT, nullptr);
 
     glDisableClientState(GL_ELEMENT_ARRAY_UNIFIED_NV);
     glDisableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
     glBindVertexArray(0);
     glBindProgramPipeline(0);
-
-    {
-        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
-        GLuint *counter;
-        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
-        counter = (GLuint*)glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT);
-        cout << "Counter : " << counter[0] << endl;
-        glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
-    }
 }
 
 void runloop()
 {
+    glfwSetTime(0);
     while (!glfwWindowShouldClose(glfwWindow)){
+        DeltaTime = glfwGetTime();
         renderquad();
         rendercube();
+        glfwSetTime(0);
 
         // test if buffer was written to
         // GLuint *counter;
