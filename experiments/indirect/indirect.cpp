@@ -27,6 +27,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #define GLEW_NO_GLU
 #include <GL/glew.h>
@@ -48,6 +49,9 @@ namespace {
         GLuint TextureID = 0;
         GLuint FramebufferID = 0;
         GLsizei PrimCount = 0;  // # of objects to draw
+        // maximum uniform buffer count in vertex shader is 14,
+        //  the nearest number that has a square root less than 14 is 9.
+        //  Which means TextureSize has a maximum size of 3, which is enforced later in the app.
         GLsizei TextureSize = 1;
         GLsizei Count = TextureSize*TextureSize;      // # of verts to draw
     }
@@ -466,7 +470,6 @@ void initCubeGeometry()
     glEnableVertexAttribArray(1); // normals
 
     ogle::CubeGenerator geom;
-    geom.tessellation_density(60);
     geom.generate();
 
     CubeVertCount = geom.Positions.size();
@@ -541,6 +544,21 @@ void setGLSettings()
     // glEnable(GL_CULL_FACE);
 }
 
+void oglGets()
+{
+    GLint params;
+    glGetIntegerv(GL_MAX_VERTEX_UNIFORM_BLOCKS, &params);
+    cout << "Maximum uniforms in vertex shader: " << params << endl;
+    ic::TextureSize = sqrt(params);
+    ic::TextureSize = floor(ic::TextureSize);
+    cout << "Maximum value for TextureSize: " << ic::TextureSize << endl;
+    glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &params);
+    cout << "Maximum uniform block size: " << params << " bytes" << endl;
+    cout << "Sizeof(Mat4)*2*TextureSize^2: "
+         << sizeof(glm::mat4)*(ic::TextureSize*ic::TextureSize)*2
+         << endl;
+}
+
 void init( int argc, char *argv[] )
 {
     setDataDir(argc, argv);
@@ -548,6 +566,8 @@ void init( int argc, char *argv[] )
     initGLEW();
     checkExtensions();
     ogle::Debug::init();
+
+    oglGets();
 
     initTexture();
     initFramebuffer();
@@ -574,6 +594,7 @@ void renderquad()
 
     // using the following framebuffer, update the atomic counter
     bindFBO();
+    glViewport( 0, 0, ic::TextureSize, ic::TextureSize);
 
     // and now "draw" the fullscreen quad to the frame buffer to update the atmoic counter
     // for each pixel attempted to be drawn.
@@ -590,6 +611,7 @@ void renderquad()
     glBindVertexArray(0);
     glBindProgramPipeline(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport( 0, 0, (GLsizei)WindowWidth, (GLsizei)WindowHeight );
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
     glEnable(GL_DEPTH_TEST);
 }
@@ -600,7 +622,15 @@ void rendercube()
     glClearColor(0.3,0.5,0.7,0);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
+    //!!!
+    // the indirect command buffer is filled in by renderquad, but there is no garauntee that it is done
+    //  place a glMemoryBarrier to ensure the work is done.
+
     glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 1.f, 100.0f);
+
+    // the sizes are of the cubes are 2, have a spacing of 1
+    glm::vec3 push_vec(0);
+
     glm::mat4 View = glm::mat4(1.0f);
     glm::mat4 Model = glm::mat4(1.0f);
     glm::mat3 Normal = glm::mat3(1.0f);

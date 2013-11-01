@@ -11,7 +11,7 @@ layout(std140) uniform transform
 {
     mat4 MVP;
     mat3 Normal;
-} Transform;
+} Transform[9];
 
 out gl_PerVertex
 {
@@ -21,6 +21,6 @@ out gl_PerVertex
 layout(location = 2) out vec3 normal;
 
 void main() {
-    gl_Position = Transform.MVP * Position;
+    gl_Position = Transform[gl_InstanceID].MVP * Position;
     normal = /*Transform.Normal **/ Normal;
 }
