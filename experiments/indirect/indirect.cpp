@@ -626,10 +626,20 @@ void rendercube()
     // the indirect command buffer is filled in by renderquad, but there is no garauntee that it is done
     //  place a glMemoryBarrier to ensure the work is done.
 
+    // update the uniform buffer
+    // {
+    glBindBufferBase(GL_UNIFORM_BUFFER, uniformblock::TRANSFORM, Buffer[buffer::CUBE_TRANSFORM]);
+    glBindBuffer(GL_UNIFORM_BUFFER, Buffer[buffer::CUBE_TRANSFORM]);
+
     glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 1.f, 100.0f);
 
     // the sizes are of the cubes are 2, have a spacing of 1
+    // rotate the push_vec after each iteration to get into all the locations
+    // the center of each cube will be at 0,0,0
     glm::vec3 push_vec(0);
+    for (GLsizei i=0; i<ic::TextureSize; ++i){
+
+    }
 
     glm::mat4 View = glm::mat4(1.0f);
     glm::mat4 Model = glm::mat4(1.0f);
@@ -642,8 +652,6 @@ void rendercube()
     glm::mat4 MVP = Projection * View * Model;
 
     // todo: figure out if bindbufferbase is needed at all if the binding point is already set and we are using glbindbuffer
-    glBindBufferBase(GL_UNIFORM_BUFFER, uniformblock::TRANSFORM, Buffer[buffer::CUBE_TRANSFORM]);
-    glBindBuffer(GL_UNIFORM_BUFFER, Buffer[buffer::CUBE_TRANSFORM]);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), &MVP[0][0]);
     glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat3), &Normal[0][0]);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
