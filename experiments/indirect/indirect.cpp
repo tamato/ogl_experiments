@@ -49,12 +49,15 @@ namespace {
     namespace ic { // ic == indirect_commands
         GLuint TextureID = 0;
         GLuint FramebufferID = 0;
-        GLsizei PrimCount = 0;  // # of objects to draw
-        // maximum uniform buffer count in vertex shader is 14,
-        //  the nearest number that has a square root less than 14 is 9.
-        //  Which means TextureSize has a maximum size of 3, which is enforced later in the app.
+
+        // the max TextureSize is found inside oglGets()
+        // After it is found then TextureID and FramebufferID is created
+        // The TextureID will have a width and height of TextureSize.
+        // FramebufferID is using the texture created with TextureID
+        // For each fragment in FramebufferID an atomic counter will be incremented once
+        //  the atmoic counter that is incremented is also the PrimCount variable of IndirectCommand struct.
+        // Therefore, the square of TextureSize is PrimCount.
         GLsizei TextureSize = 1;
-        GLsizei Count = TextureSize*TextureSize;      // # of verts to draw
     }
 
     namespace vao
@@ -570,13 +573,16 @@ void oglGets()
     GLint params;
     glGetIntegerv(GL_MAX_VERTEX_UNIFORM_BLOCKS, &params);
     cout << "Maximum uniforms in vertex shader: " << params << endl;
-    ic::TextureSize = sqrt(params);
-    ic::TextureSize = floor(ic::TextureSize);
-    cout << "Maximum value for TextureSize: " << ic::TextureSize << endl;
+
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &params);
     cout << "Maximum uniform block size: " << params << " bytes" << endl;
-    cout << "Sizeof(Mat4)*2*TextureSize^2: "
-         << sizeof(glm::mat4)*(ic::TextureSize*ic::TextureSize)*2
+
+    GLint max_num_matrices = params / sizeof(glm::mat4);
+    ic::TextureSize = sqrt(max_num_matrices);
+    ic::TextureSize = floor(ic::TextureSize);
+    cout << "Maximum value for TextureSize: " << ic::TextureSize << endl;
+    cout << "Sizeof(Mat4)*TextureSize^2: "
+         << sizeof(glm::mat4)*(ic::TextureSize*ic::TextureSize)
          << endl;
 }
 
@@ -663,7 +669,6 @@ void rendercube()
         glm::mat4 Normal = glm::mat4(1.0f);
 
         GLsizei mat4_size = sizeof(glm::mat4);
-        GLsizei mat4_size2 = mat4_size*2;
 
         // the sizes are of the cubes are 2, have a spacing of 1
         // move the camera into place.
@@ -679,7 +684,7 @@ void rendercube()
         // the center of each cube will be at 0,0,0
         glm::vec3 push_vec(0);
         GLsizei limit = ic::TextureSize*ic::TextureSize;
-        for (GLsizei i=0; i<limit; ++i){
+        for (GLsizei i=0; i<limit-3; ++i){
             glm::mat4 Model = glm::mat4(1.0f);
             if (i < 3)
                 Model = glm::rotate(Model, (float)y, glm::vec3(1.f, 0.f, 0.f));

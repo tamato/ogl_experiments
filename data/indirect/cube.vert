@@ -10,7 +10,7 @@ layout(location = 1) in vec3 Normal;
 // http://www.opengl.org/wiki/Uniform_Buffer_Object#Layout_queries
 layout(std140) uniform transform
 {
-    mat4 MVP[9];
+    mat4 MVP[1024];
 };
 
 out gl_PerVertex
