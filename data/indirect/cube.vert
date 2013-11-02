@@ -1,4 +1,5 @@
 #version 430
+#extension GL_ARB_uniform_buffer_object : enable
 
 layout(location = 0) in vec4 Position;
 layout(location = 1) in vec3 Normal;
@@ -9,9 +10,8 @@ layout(location = 1) in vec3 Normal;
 // http://www.opengl.org/wiki/Uniform_Buffer_Object#Layout_queries
 layout(std140) uniform transform
 {
-    mat4 MVP;
-    mat3 Normal;
-} Transform[9];
+    mat4 MVP[9];
+};
 
 out gl_PerVertex
 {
@@ -21,6 +21,6 @@ out gl_PerVertex
 layout(location = 2) out vec3 normal;
 
 void main() {
-    gl_Position = Transform[gl_InstanceID].MVP * Position;
+    gl_Position = MVP[gl_InstanceID] * Position;
     normal = /*Transform.Normal **/ Normal;
 }

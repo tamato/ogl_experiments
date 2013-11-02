@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <cstring> // memset
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_CXX11
@@ -27,7 +28,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
-#include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 #define GLEW_NO_GLU
 #include <GL/glew.h>
@@ -112,13 +113,22 @@ namespace {
         };
     }
 
-    namespace uniformblock
+    namespace buffer_base_loc
     {
         enum type
         {
+            ATOMIC,
             TRANSFORM
         };
     }
+
+    struct IndirectCommand {
+        GLuint Count;
+        GLuint PrimCount;
+        GLuint FirstIndex;
+        GLuint BaseVertex;
+        GLuint Zero;
+    } DrawElementsCommand;
 
     GLuint VAO[vao::MAX] = {0};
     GLuint Buffer[buffer::MAX] = {0};
@@ -429,8 +439,9 @@ void initQuadGeometry()
 
 void initAtomicBuffer()
 {
+    memset((void*)&DrawElementsCommand, sizeof(IndirectCommand), 0);
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
-    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(IndirectCommand), (GLvoid*)&DrawElementsCommand, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 }
 
@@ -505,7 +516,7 @@ void initCubeUniforms()
     // use the name of the block(struct) to get its index
     CubeTransformBlockIdx = glGetUniformBlockIndex(Program[program::CUBE], "transform");
     // this should only be called once, tell the program what binding location to match with the block index
-    glUniformBlockBinding(Program[program::CUBE], CubeTransformBlockIdx, uniformblock::TRANSFORM);    // sets state in the glsl program
+    glUniformBlockBinding(Program[program::CUBE], CubeTransformBlockIdx, buffer_base_loc::TRANSFORM);    // sets state in the glsl program
 
     GLint blockSize = 0;
     glGetActiveUniformBlockiv(
@@ -520,11 +531,21 @@ void initCubeUniforms()
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
+void initCubeIndirectCommand()
+{
+    DrawElementsCommand.Count = CubeIndiceCount;
+    DrawElementsCommand.PrimCount = 0;
+    DrawElementsCommand.FirstIndex = 0;
+    DrawElementsCommand.BaseVertex = 0;
+    DrawElementsCommand.Zero = 0;
+}
+
 void initCube()
 {
     initCubeShader();
     initCubeGeometry();
     initCubeUniforms();
+    initCubeIndirectCommand();
 }
 
 void setDataDir(int argc, char *argv[])
@@ -585,9 +606,10 @@ void renderquad()
     glDisable(GL_DEPTH_TEST);
 
     // Clear out the atmoic counter
-    GLuint clear_data = 0;
+    DrawElementsCommand.PrimCount = 0;
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
-    glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &clear_data);
+    glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(IndirectCommand), (GLvoid*)&DrawElementsCommand);
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 
     // the main goal of this render pass is to write to the atomic counter, turn off what we are not going to use.
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -600,7 +622,7 @@ void renderquad()
     // for each pixel attempted to be drawn.
     glBindProgramPipeline(Pipeline[pipeline::QUAD]);
     glBindVertexArray(VAO[vao::QUAD]);
-    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, Buffer[buffer::INDIRECT]);
+    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, buffer_base_loc::ATOMIC, Buffer[buffer::INDIRECT]);
     glVertexAttribFormatNV(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2)); // <- need to be here?
 
     glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
@@ -612,8 +634,9 @@ void renderquad()
     glBindProgramPipeline(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport( 0, 0, (GLsizei)WindowWidth, (GLsizei)WindowHeight );
-    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
     glEnable(GL_DEPTH_TEST);
+
+    glMemoryBarrier(GL_ATOMIC_COUNTER_BARRIER_BIT);
 }
 
 void rendercube()
@@ -627,34 +650,51 @@ void rendercube()
     //  place a glMemoryBarrier to ensure the work is done.
 
     // update the uniform buffer
-    // {
-    glBindBufferBase(GL_UNIFORM_BUFFER, uniformblock::TRANSFORM, Buffer[buffer::CUBE_TRANSFORM]);
-    glBindBuffer(GL_UNIFORM_BUFFER, Buffer[buffer::CUBE_TRANSFORM]);
+    {
+        // in order to access the uniform buffer, glBindBufferBase must be used and not glBindBuffer
+        //  glBindBuffer is not needed for uniform buffers.
+        // Also, don't do the normal unbinding of the uniform buffer either,
+        // the param <index> doesn't need to be rebound each cycle, but it is going to be easier for me to
+        //  remember my intents as long as this is here.
+        glBindBufferBase(GL_UNIFORM_BUFFER, buffer_base_loc::TRANSFORM, Buffer[buffer::CUBE_TRANSFORM]);
 
-    glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 1.f, 100.0f);
+        glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 1.f, 100.0f);
+        glm::mat4 View = glm::mat4(1.0f);
+        glm::mat4 Normal = glm::mat4(1.0f);
 
-    // the sizes are of the cubes are 2, have a spacing of 1
-    // rotate the push_vec after each iteration to get into all the locations
-    // the center of each cube will be at 0,0,0
-    glm::vec3 push_vec(0);
-    for (GLsizei i=0; i<ic::TextureSize; ++i){
+        GLsizei mat4_size = sizeof(glm::mat4);
+        GLsizei mat4_size2 = mat4_size*2;
 
+        // the sizes are of the cubes are 2, have a spacing of 1
+        // move the camera into place.
+        View[3][2] = -12.0f;
+
+        static double y=0;
+        y += 2.0 * DeltaTime;
+
+        float pi = float(M_PI);
+        float pi2 = 2.0f*pi;
+
+        // rotate the push_vec after each iteration to get into all the locations
+        // the center of each cube will be at 0,0,0
+        glm::vec3 push_vec(0);
+        GLsizei limit = ic::TextureSize*ic::TextureSize;
+        for (GLsizei i=0; i<limit; ++i){
+            glm::mat4 Model = glm::mat4(1.0f);
+            if (i < 3)
+                Model = glm::rotate(Model, (float)y, glm::vec3(1.f, 0.f, 0.f));
+            else if (i < 6)
+                Model = glm::rotate(Model, (float)y, glm::vec3(0.f, 1.f, 0.f));
+            else if (i < 9)
+                Model = glm::rotate(Model, (float)y, glm::vec3(0.f, 0.f, 1.f));
+            Model[3] = glm::vec4(push_vec, 1);
+
+            glm::mat4 MVP = Projection * View * Model;
+            glBufferSubData(GL_UNIFORM_BUFFER, mat4_size*i, mat4_size, &MVP[0][0]);
+            push_vec = glm::vec3(4,0,0);
+            push_vec = glm::rotateZ(push_vec, (i/float(limit-1)) * pi2 );
+        }
     }
-
-    glm::mat4 View = glm::mat4(1.0f);
-    glm::mat4 Model = glm::mat4(1.0f);
-    glm::mat3 Normal = glm::mat3(1.0f);
-
-    static double y=0;
-    y += 1.0 * DeltaTime;
-    Model = glm::rotate(Model, (float)y, glm::vec3(0.f, 1.f, 0.f)) * glm::rotate(Model, (float)y, glm::vec3(1.f, 0.f, 0.f));
-    View[3][2] = -10.0f;
-    glm::mat4 MVP = Projection * View * Model;
-
-    // todo: figure out if bindbufferbase is needed at all if the binding point is already set and we are using glbindbuffer
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), &MVP[0][0]);
-    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat3), &Normal[0][0]);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     glBindProgramPipeline(Pipeline[pipeline::CUBE]);
     glBindVertexArray(VAO[vao::CUBE]);
@@ -673,7 +713,9 @@ void rendercube()
     glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 1, BufferAddr[addr::CUBE_NORMALS], CubeVertByteCount);
 
     glBufferAddressRangeNV(GL_ELEMENT_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::CUBE_INDICES], CubeIndiceByteCount);
-    glDrawRangeElements(GL_TRIANGLES, 0, CubeVertCount, CubeIndiceCount, GL_UNSIGNED_INT, nullptr);
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, Buffer[buffer::INDIRECT]);
+    glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0); // the last value must be zero, need to find out why...
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
     glDisableClientState(GL_ELEMENT_ARRAY_UNIFIED_NV);
     glDisableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
@@ -691,10 +733,10 @@ void runloop()
         glfwSetTime(0);
 
         // test if buffer was written to
-        // GLuint *counter;
+        // IndirectCommand *counter;
         // glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
-        // counter = (GLuint*)glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT);
-        // cout << "Counter : " << counter[0] << endl;
+        // counter = (IndirectCommand*)glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(IndirectCommand), GL_MAP_READ_BIT);
+        // cout << "Counter : " << counter->PrimCount << endl;
         // glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
 
         glfwSwapBuffers(glfwWindow);
