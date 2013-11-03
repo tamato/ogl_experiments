@@ -18,6 +18,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <algorithm>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_CXX11
@@ -35,25 +36,15 @@
 using namespace std;
 
 namespace {
-    std::string BaseDirectory; // ends with a forward slash
+    std::string DataDirectory; // ends with a forward slash
     GLFWwindow *glfwWindow;
     int WindowWidth = 800;
     int WindowHeight = 640;
-
-    // namespace for indirect command related properties
-    namespace ic { // ic == indirect_commands
-        GLuint TextureID = 0;
-        GLuint FramebufferID = 0;
-        GLsizei PrimCount = 0;  // # of objects to draw
-        GLsizei TextureSize = 1;
-        GLsizei Count = TextureSize*TextureSize;      // # of verts to draw
-    }
 
     namespace vao
     {
         enum type
         {
-            CUBE,
             QUAD,
             MAX
         };
@@ -63,9 +54,7 @@ namespace {
     {
         enum type
         {
-            CUBE,
             QUAD,
-            INDIRECT,
             MAX
         };
     }
@@ -74,7 +63,6 @@ namespace {
     {
         enum type
         {
-            CUBE,
             QUAD,
             MAX
         };
@@ -84,7 +72,6 @@ namespace {
     {
         enum type
         {
-            CUBE,
             QUAD,
             MAX
         };
@@ -94,10 +81,21 @@ namespace {
     {
         enum type
         {
-            CUBE,
             QUAD,
             MAX
         };
+    }
+
+    namespace framebuffer
+    {
+        GLuint TextureName = 0;
+        GLuint FramebufferName = 0;
+        GLuint Width = WindowWidth;
+        GLuint Height = WindowHeight;
+        GLuint ComponentCount = 1;
+        GLint  InternalFormat = GL_RED;
+        GLint  Format = GL_RED;
+        GLint  Type = GL_UNSIGNED_INT;
     }
 
     GLuint VAO[vao::MAX] = {0};
@@ -114,10 +112,6 @@ namespace {
         glm::vec2( 1, 1),
         glm::vec2(-1, 1),
     };
-
-    GLsizei CubeVertCount = 0;
-    GLsizei CubeSize = 0;
-    glm::vec3 CubeVerts;
 }
 
 void errorCallback(int error, const char* description)
@@ -145,7 +139,7 @@ void initGLFW()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
-    glfwWindow = glfwCreateWindow( WindowWidth, WindowHeight, "Bindless NV Example", NULL, NULL );
+    glfwWindow = glfwCreateWindow( WindowWidth, WindowHeight, "Round Trip Demo", NULL, NULL );
     if (!glfwWindow)
     {
         glfwTerminate();
@@ -187,16 +181,6 @@ void checkExtensions()
 
         // debug printing support
         ,"GL_ARB_debug_output"                  // http://www.opengl.org/registry/specs/ARB/debug_output.txt
-
-        // indirect rendering (issue rendering commands from the gpu)
-        ,"GL_ARB_draw_indirect"                 // http://www.opengl.org/registry/specs/ARB/draw_indirect.txt
-        ,"GL_ARB_base_instance"                 // http://www.opengl.org/registry/specs/ARB/base_instance.txt
-
-        // for atomic operations on the gpu
-        ,"GL_ARB_shader_atomic_counters"        // http://www.opengl.org/registry/specs/ARB/shader_atomic_counters.txt
-
-        // clear buffer objects (why this hasn't always existed is surprising)
-        ,"GL_ARB_clear_buffer_object"           // http://www.opengl.org/registry/specs/ARB/clear_buffer_object.txt
     };
     for (auto extension : extensions) {
         if (glfwExtensionSupported(extension.c_str()) == GL_FALSE)
@@ -210,11 +194,10 @@ void checkExtensions()
 */
 void initTexture()
 {
-    glGenTextures(1, &::ic::TextureID);
-    glBindTexture(GL_TEXTURE_2D, ::ic::TextureID);
+    glGenTextures(1, &framebuffer::TextureName);
+    glBindTexture(GL_TEXTURE_2D, framebuffer::TextureName);
 
-    int num_componets = 4;
-    unsigned int size = ::ic::TextureSize * ::ic::TextureSize * num_componets;
+    unsigned int size = framebuffer::Width * framebuffer::Height * framebuffer::ComponentCount;
     unsigned int *data = new unsigned int[size];
     for (int i=0; i<size; i+=4)
         data[i] = 0;
@@ -225,7 +208,16 @@ void initTexture()
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, ::ic::TextureSize, ::ic::TextureSize, 0, GL_RGBA, GL_UNSIGNED_INT, data);
+    glTexImage2D(
+        GL_TEXTURE_2D, 0,
+        framebuffer::InternalFormat,
+        framebuffer::Width,
+        framebuffer::Height,
+        0,
+        framebuffer::Format,
+        framebuffer::Type,
+        data
+    );
 
     if (glGetError() != GL_NONE) assert(0);
 
@@ -291,9 +283,9 @@ void checkFBO()
 
 void initFramebuffer()
 {
-    glGenFramebuffers(1, &::ic::FramebufferID);
-    glBindFramebuffer(GL_FRAMEBUFFER, ::ic::FramebufferID);
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ::ic::TextureID, 0);
+    glGenFramebuffers(1, &framebuffer::FramebufferName);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer::FramebufferName);
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebuffer::TextureName, 0);
 
     // check for completeness
     checkFBO();
@@ -302,9 +294,9 @@ void initFramebuffer()
 
 void bindFBO()
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, ::ic::FramebufferID);
-    if ( ::ic::FramebufferID != 0 )
-        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ::ic::TextureID, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer::FramebufferName);
+    if ( framebuffer::FramebufferName != 0 )
+        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebuffer::TextureName, 0);
 
     // make sure nothing broke.
     checkFBO();
@@ -373,8 +365,8 @@ void checkShaderLinkage( const GLuint& program)
 
 void initQuadShader()
 {
-    GLuint vert = createShader(GL_VERTEX_SHADER, BaseDirectory + "quad.vert");
-    GLuint frag = createShader(GL_FRAGMENT_SHADER, BaseDirectory + "quad.frag");
+    GLuint vert = createShader(GL_VERTEX_SHADER, DataDirectory + "quad.vert");
+    GLuint frag = createShader(GL_FRAGMENT_SHADER, DataDirectory + "quad.frag");
 
     Program[program::QUAD] = glCreateProgram();
     glProgramParameteri(Program[program::QUAD], GL_PROGRAM_SEPARABLE, GL_TRUE);
@@ -386,13 +378,6 @@ void initQuadShader()
 
     checkShaderLinkage(Program[program::QUAD]);
     glUseProgramStages(Pipeline[pipeline::QUAD], GL_VERTEX_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, Program[program::QUAD]);
-
-    // GLuint buffer_idx = 0;
-    // GLint atomic_buffer_count = 0;
-    // GLint size = 0;
-    // glGetProgramiv(Program[program::QUAD], GL_ACTIVE_ATOMIC_COUNTER_BUFFERS, &atomic_buffer_count);
-    // glGetActiveAtomicCounterBufferiv(Program[program::QUAD], 0, GL_ATOMIC_COUNTER_BUFFER_DATA_SIZE, &size);
-    // cout << "Count: " << atomic_buffer_count << " " << " size " << size << endl;
 }
 
 void initQuadGeometry()
@@ -411,25 +396,26 @@ void initQuadGeometry()
     glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
 }
 
-void initAtomicBuffer()
-{
-    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
-    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), NULL, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
-}
-
 void initFullScreenQuad()
 {
     initQuadShader();
     initQuadGeometry();
-    initAtomicBuffer();
+}
+
+void setDataDir(int argc, char *argv[])
+{
+    // get base directory for reading in files
+    std::string path = argv[0];
+    std::replace(path.begin(), path.end(), '\\', '/');
+    size_t dir_idx = path.rfind("/")+1;
+    std::string exe_dir = path.substr(0, dir_idx);
+    std::string exe_name = path.substr(dir_idx);
+    DataDirectory = exe_dir + "../data/" + exe_name + "/";
 }
 
 void init( int argc, char *argv[])
 {
-    // get base directory for reading in files
-    BaseDirectory = std::string(argv[0]);
-    BaseDirectory += "_data/";
+    setDataDir(argc, argv);
 
     initGLFW();
     initGLEW();
@@ -446,11 +432,6 @@ void init( int argc, char *argv[])
 
 void renderquad()
 {
-    // Clear out the atmoic counter
-    GLuint clear_data = 0;
-    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
-    glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &clear_data);
-
     // the main goal of this render pass is to write to the atomic counter, turn off what we are not going to use.
     // glDisable(GL_DEPTH_TEST);
     // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -464,7 +445,6 @@ void renderquad()
     // for each pixel attempted to be drawn.
     glBindProgramPipeline(Pipeline[pipeline::QUAD]);
     glBindVertexArray(VAO[vao::QUAD]);
-    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, Buffer[buffer::INDIRECT]);
 
     glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
@@ -472,20 +452,22 @@ void renderquad()
     glBindVertexArray(0);
     glBindProgramPipeline(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 }
 
 void runloop()
 {
     while (!glfwWindowShouldClose(glfwWindow)){
+        glfwSetTime(0);
         renderquad();
 
-        // test if buffer was written to
-        GLuint *counter;
-        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::INDIRECT]);
-        counter = (GLuint*)glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT);
-        cout << "Counter : " << counter[0] << endl;
-        glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
+        unsigned int size = framebuffer::Width * framebuffer::Height * framebuffer::ComponentCount;
+        unsigned int *data = new unsigned int[size];
+        glBindTexture(GL_TEXTURE_2D, framebuffer::TextureName);
+        glGetTexImage(GL_TEXTURE_2D, 0, framebuffer::Format, framebuffer::Type, (GLvoid*)data);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        double time = glfwGetTime();
+        cout << "Round trip time: " << time*1000.0 << " milliseconds" << endl;
+        delete [] data;
 
         glfwSwapBuffers(glfwWindow);
         glfwPollEvents();
@@ -494,8 +476,8 @@ void runloop()
 
 void shutdown()
 {
-    glDeleteFramebuffers(1, &::ic::FramebufferID);
-    glDeleteTextures(1, &::ic::TextureID);
+    glDeleteFramebuffers(1, &framebuffer::FramebufferName);
+    glDeleteTextures(1, &framebuffer::TextureName);
 
     glDeleteProgramPipelines(::pipeline::MAX, Pipeline);
     glDeleteBuffers(::buffer::MAX, Buffer);

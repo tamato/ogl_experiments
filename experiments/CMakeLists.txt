@@ -1,4 +1,4 @@
 add_subdirectory(bindless_nv)
 add_subdirectory(indirect)
 add_subdirectory(depth_buffer)
-#add_subdirectory(round_trip)
+add_subdirectory(round_trip)

@@ -651,10 +651,6 @@ void rendercube()
     glClearColor(0.3,0.5,0.7,0);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    //!!!
-    // the indirect command buffer is filled in by renderquad, but there is no garauntee that it is done
-    //  place a glMemoryBarrier to ensure the work is done.
-
     // update the uniform buffer
     {
         // in order to access the uniform buffer, glBindBufferBase must be used and not glBindBuffer
@@ -684,22 +680,24 @@ void rendercube()
         // the center of each cube will be at 0,0,0
         glm::vec3 push_vec(0);
         GLsizei limit = ic::TextureSize*ic::TextureSize;
-        for (GLsizei i=0; i<limit-3; ++i){
+        glm::mat4 MVP[limit];
+        for (GLsizei i=0; i<limit; ++i){
             glm::mat4 Model = glm::mat4(1.0f);
-            if (i < 3)
+            if (i % 3 == 0)
                 Model = glm::rotate(Model, (float)y, glm::vec3(1.f, 0.f, 0.f));
-            else if (i < 6)
+            else if (i % 4 == 0)
                 Model = glm::rotate(Model, (float)y, glm::vec3(0.f, 1.f, 0.f));
-            else if (i < 9)
+            else if (i % 5 == 0)
                 Model = glm::rotate(Model, (float)y, glm::vec3(0.f, 0.f, 1.f));
             Model[3] = glm::vec4(push_vec, 1);
 
-            glm::mat4 MVP = Projection * View * Model;
-            glBufferSubData(GL_UNIFORM_BUFFER, mat4_size*i, mat4_size, &MVP[0][0]);
+            MVP[i] = Projection * View * Model;
             push_vec = glm::vec3(4,0,0);
             push_vec = glm::rotateZ(push_vec, (i/float(limit-1)) * pi2 );
         }
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(MVP), &MVP[0][0][0]);
     }
+
 
     glBindProgramPipeline(Pipeline[pipeline::CUBE]);
     glBindVertexArray(VAO[vao::CUBE]);
