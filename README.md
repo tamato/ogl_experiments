@@ -51,3 +51,5 @@ Learning experiment on how to work with indirect rendering
 Comparing different strategies on writing out to the depth buffer
 ####round_trip
 Finding the amount of time it takes to send a texture to the gpu, write to it and then read it back
+####raster_pattern
+Renders GPU's rasterization pattern
