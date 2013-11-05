@@ -56,6 +56,7 @@ namespace {
         {
             QUAD,
             ATOMIC,
+            ATOMIC_2,
             MAX
         };
     }
@@ -86,6 +87,15 @@ namespace {
         {
             QUAD,
             MAX
+        };
+    }
+
+    namespace buffer_base_loc
+    {
+        enum type
+        {
+            ATOMIC,
+            ATOMIC_2
         };
     }
 
@@ -191,120 +201,6 @@ void checkExtensions()
     }
 }
 
-/**
-    This texture will be used to tell the indirect
-    rendering commands how many cubes to draw
-*/
-void initTexture()
-{
-    glGenTextures(1, &framebuffer::TextureName);
-    glBindTexture(GL_TEXTURE_2D, framebuffer::TextureName);
-
-    unsigned int size = framebuffer::Width * framebuffer::Height * framebuffer::ComponentCount;
-    unsigned int *data = new unsigned int[size];
-    for (int i=0; i<size; i+=4)
-        data[i] = 0;
-
-    // Nvidia has a bug that if these were intergal textures
-    // GL_LINEAR cannot be used and must be GL_NEAREST
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexImage2D(
-        GL_TEXTURE_2D, 0,
-        framebuffer::InternalFormat,
-        framebuffer::Width,
-        framebuffer::Height,
-        0,
-        framebuffer::Format,
-        framebuffer::Type,
-        data
-    );
-
-    if (glGetError() != GL_NONE) assert(0);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-    delete [] data;
-}
-
-void checkFBO()
-{
-    GLenum result = glCheckFramebufferStatus( GL_FRAMEBUFFER );
-    if (result != GL_FRAMEBUFFER_COMPLETE)
-    {
-        cout << "FBO incomplete, error: " << endl;
-        switch (result)
-        {
-            /*********************************************************************
-              These values were found from:
-                http://www.opengl.org/wiki/GLAPI/glCheckFramebufferStatus
-            *********************************************************************/
-            case GL_FRAMEBUFFER_UNDEFINED:
-                cout << "\tGL_FRAMEBUFFER_UNDEFINED\n";
-                cout << "\t-target- is the default framebuffer";
-                break;
-            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-                cout << "\tGL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT\n";
-                cout << "\tthe framebuffer attachment is incomplete";
-                break;
-            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-                cout << "\tGL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT\n";
-                cout << "\tthere are no images attached to the framebuffer";
-                break;
-            case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
-                cout << "\tGL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER\n";
-                cout << "\tone of the color attaches has an object type of GL_NONE";
-                break;
-            case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
-                cout << "\tGL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER\n";
-                cout << "\tGL_READ_BUFFER attached object type of GL_NONE";
-                break;
-            case GL_FRAMEBUFFER_UNSUPPORTED:
-                cout << "\tGL_FRAMEBUFFER_UNSUPPORTED\n";
-                cout << "\tinternal formats conflict with implementation-dependent restrictions";
-                break;
-            case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
-                cout << "\tGL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE\n";
-                cout << "\tis also returned if the value of GL_TEXTURE_FIXED_SAMPLE_LOCATIONS"
-                     << "\tis not the same for all attached textures; or, if the attached images"
-                     << "\tare a mix of renderbuffers and textures, the value of"
-                     << "\tGL_TEXTURE_FIXED_SAMPLE_LOCATIONS is not GL_TRUE for all attached textures.";
-                break;
-            case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
-                cout << "\tGL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS\n";
-                cout << "\ta framebuffer attachment is layered, and a populated attachment is not layered,"
-                     << "\tor if all populated color attachments are not from textures of the same target.";
-                break;
-            default:
-                cout << "\tUnknown error occured.";
-        }
-        cout << endl;
-        assert(0);
-    }
-}
-
-void initFramebuffer()
-{
-    glGenFramebuffers(1, &framebuffer::FramebufferName);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer::FramebufferName);
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebuffer::TextureName, 0);
-
-    // check for completeness
-    checkFBO();
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void bindFBO()
-{
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer::FramebufferName);
-    if ( framebuffer::FramebufferName != 0 )
-        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebuffer::TextureName, 0);
-
-    // make sure nothing broke.
-    checkFBO();
-}
-
 void createGLObjects()
 {
     glGenVertexArrays(::vao::MAX, VAO);
@@ -383,6 +279,23 @@ void initQuadShader()
     glUseProgramStages(Pipeline[pipeline::QUAD], GL_VERTEX_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, Program[program::QUAD]);
 }
 
+void initQuadShaderAtomic()
+{
+    GLuint vert = createShader(GL_VERTEX_SHADER, DataDirectory + "quad.vert");
+    GLuint frag = createShader(GL_FRAGMENT_SHADER, DataDirectory + "atomic_inc.frag");
+
+    Program[program::INC_ATOMIC] = glCreateProgram();
+    glProgramParameteri(Program[program::INC_ATOMIC], GL_PROGRAM_SEPARABLE, GL_TRUE);
+    glAttachShader(Program[program::INC_ATOMIC], vert);
+    glAttachShader(Program[program::INC_ATOMIC], frag);
+    glLinkProgram(Program[program::INC_ATOMIC]);
+    glDeleteShader(vert);
+    glDeleteShader(frag);
+
+    checkShaderLinkage(Program[program::INC_ATOMIC]);
+    glUseProgramStages(Pipeline[pipeline::INC_ATOMIC], GL_VERTEX_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, Program[program::INC_ATOMIC]);
+}
+
 void initQuadGeometry()
 {
     glBindVertexArray(VAO[vao::QUAD]);
@@ -399,18 +312,46 @@ void initQuadGeometry()
     glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
 }
 
-void initAtomicBuffer()
+void initAtomicBuffers()
 {
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::ATOMIC]);
     glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::ATOMIC_2]);
+    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW);
+
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+}
+
+void initAtomicUniform()
+{
+    // use the name of the block(struct) to get its index
+    GLint counter_loc = glGetUniformBlockIndex(Program[program::QUAD], "atomic");
+    // this should only be called once, tell the program what binding location to match with the block index
+    glUniformBlockBinding(Program[program::QUAD], counter_loc, buffer_base_loc::ATOMIC);    // sets state in the glsl program
+
+    GLint blockSize = 0;
+    glGetActiveUniformBlockiv(
+        Program[program::QUAD],
+        counter_loc,
+        GL_UNIFORM_BLOCK_DATA_SIZE,
+        &blockSize
+    );
+
+    glBindBuffer(GL_UNIFORM_BUFFER, Buffer[buffer::ATOMIC]);
+    glBufferData(GL_UNIFORM_BUFFER, blockSize, 0, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    glBindBufferBase(GL_UNIFORM_BUFFER, buffer_base_loc::ATOMIC, Buffer[buffer::ATOMIC]);
 }
 
 void initFullScreenQuad()
 {
     initQuadShader();
+    initQuadShaderAtomic();
     initQuadGeometry();
-    initAtomicBuffer();
+    initAtomicBuffers();
+    initAtomicUniform();
 }
 
 void setDataDir(int argc, char *argv[])
@@ -433,9 +374,6 @@ void init( int argc, char *argv[])
     checkExtensions();
     ogle::Debug::init();
 
-    initTexture();
-    initFramebuffer();
-
     createGLObjects();
 
     initFullScreenQuad();
@@ -453,24 +391,28 @@ void increment_counter()
     glDisable(GL_DEPTH_TEST);
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-    // using the following framebuffer, update the atmoic counter
-    bindFBO();
-
     // and now "draw" the fullscreen quad to the frame buffer to update the atmoic counter
     // for each pixel attempted to be drawn.
-    glBindProgramPipeline(Pipeline[pipeline::QUAD]);
+    glBindProgramPipeline(Pipeline[pipeline::INC_ATOMIC]);
     glBindVertexArray(VAO[vao::QUAD]);
+
+    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, buffer_base_loc::ATOMIC, Buffer[buffer::ATOMIC]);
 
     glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
 
     glBindVertexArray(0);
     glBindProgramPipeline(0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void renderquad()
 {
+    // Clear out the atmoic counter
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, Buffer[buffer::ATOMIC_2]);
+    unsigned int data = 0;
+    glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(unsigned int), (GLvoid*)&data);
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glClearColor( 0,0,0,0 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -479,6 +421,8 @@ void renderquad()
     // for each pixel attempted to be drawn.
     glBindProgramPipeline(Pipeline[pipeline::QUAD]);
     glBindVertexArray(VAO[vao::QUAD]);
+
+    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, buffer_base_loc::ATOMIC_2, Buffer[buffer::ATOMIC_2]);
 
     glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);

@@ -629,7 +629,6 @@ void renderquad()
     glBindProgramPipeline(Pipeline[pipeline::QUAD]);
     glBindVertexArray(VAO[vao::QUAD]);
     glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, buffer_base_loc::ATOMIC, Buffer[buffer::INDIRECT]);
-    glVertexAttribFormatNV(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2)); // <- need to be here?
 
     glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
     glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
