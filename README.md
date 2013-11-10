@@ -53,3 +53,5 @@ Comparing different strategies on writing out to the depth buffer
 Finding the amount of time it takes to send a texture to the gpu, write to it and then read it back
 ####raster_pattern
 Renders GPU's rasterization pattern
+####bits
+Messing around with bit twiddling for the paper "Single Pass GPU Voxelization" section 6.2
