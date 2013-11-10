@@ -12,13 +12,13 @@ using namespace std;
 void pairwise_sum(unsigned int c, unsigned int r, const string& test_name ){
     static const unsigned int mask_33 = 0x33333333;   // 0011 0011
     static const unsigned int mask_CC = 0xCCCCCCCC;   // 1100 1100
-    static const unsigned int odd_mask  = 0xAAAAAAAA; // odd mask = 1010 1010
+    static const unsigned int odd_mask  = 0xAAAAAAAA; // odd mask  = 1010 1010
     static const unsigned int even_mask = 0x55555555; // even mask = 0101 0101
     unsigned int a = c & mask_33;
     unsigned int b = c & mask_CC;
     unsigned int d = 0;
 
-    d |= (a & even_mask) + ((a & odd_mask)>>1);
+    d |= (a & even_mask) + ((a & odd_mask)>>1); // from the paper mentioned above in section 6.2
     d |= (b & even_mask) + ((b & odd_mask)>>1);
     cout << test_name << " " << boolalpha << (r == d) << endl;
 }
