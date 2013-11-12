@@ -10,12 +10,24 @@
 using namespace std;
 
 void pairwise_sum(unsigned int c, unsigned int r, const string& test_name ){
+    static const unsigned int odd_mask  = 0xAAAAAAAA; // odd mask  = 1010 1010 ...
+    static const unsigned int even_mask = 0x55555555; // even mask = 0101 0101 ...
+    unsigned int d = (c & even_mask) + ((c & odd_mask)>>1); // from the paper mentioned above in section 6.2
+    cout << test_name << " " << boolalpha << (r == d) << endl;
+}
+
+void pairwise_sum_sep(unsigned int a, unsigned int b, unsigned int r, const string& test_name ){
+    // the values coming in will have counters between [0-2] contained in 2 bits
+    // the sumed vaules would be stored in 4 bits
+    // if  a : 0010 0010 0001 0001
+    // and b : 0001 0010 0010 0001 and then the sum of these two would be
+    //   sum : 0011 0100 0011 0010
     static const unsigned int mask_33 = 0x33333333;   // 0011 0011 ...
     static const unsigned int mask_CC = 0xCCCCCCCC;   // 1100 1100 ...
     static const unsigned int odd_mask  = 0xAAAAAAAA; // odd mask  = 1010 1010 ...
     static const unsigned int even_mask = 0x55555555; // even mask = 0101 0101 ...
-    unsigned int a = c & mask_33;
-    unsigned int b = c & mask_CC;
+    unsigned int x = a & mask_33;
+    unsigned int y = b & mask_CC;
     unsigned int d = 0;
 
     d |= (a & even_mask) + ((a & odd_mask)>>1); // from the paper mentioned above in section 6.2
@@ -70,6 +82,14 @@ int main()
         c = 0x030FA5FE;
         ans = 0x020A55A9;
         pairwise_sum(c, ans, "Test 7");
+    }
+
+
+    {   // combining tests 1,2,3,6
+        unsigned int a = ;  //
+        unsigned int b = ;  //
+        ans = 0x020A55A9;
+        pairwise_sum(a, b, ans, "Test 10");
     }
     return 0;
 }
