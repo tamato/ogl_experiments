@@ -17,7 +17,7 @@ void pairwise_sum(unsigned int c, unsigned int r, const string& test_name ){
     cout << test_name << " " << boolalpha << (r == d) << endl;
 }
 
-void pairwise_sum_sep(unsigned int a, unsigned int b, unsigned int r, const string& test_name ){
+void pairwise_sum_sep(unsigned int a, unsigned int b, unsigned int r0, unsigned int r1, const string& test_name ){
     // the values coming in will have counters between [0-2] contained in 2 bits
     // the sumed vaules would be stored in 4 bits
     // if  a : 0010 0010 0001 0001
@@ -27,8 +27,8 @@ void pairwise_sum_sep(unsigned int a, unsigned int b, unsigned int r, const stri
     static const unsigned int mask_CC = 0xCCCCCCCC;   // 1100 1100 ...
     static const unsigned int odd_mask  = 0xAAAAAAAA; // odd mask  = 1010 1010 ...
     static const unsigned int even_mask = 0x55555555; // even mask = 0101 0101 ...
-    unsigned int x0 = a & mask_33;
-    unsigned int x1 = b & mask_33;
+    unsigned int x0 = a;
+    unsigned int x1 = b;
     unsigned int even = 0;
     unsigned int odd = 0;
 
@@ -37,9 +37,18 @@ void pairwise_sum_sep(unsigned int a, unsigned int b, unsigned int r, const stri
     // sum the upper bits of each nibble
     odd  = ((x0 & mask_CC) >> 2) + ((x1 & mask_CC) >> 2);
 
-    std::bitset<32> a(even);
-    std::bitset<32> b(odd);
-    cout << test_name << " " << boolalpha << (r == d) << endl;
+    std::bitset<32> pa(a);
+    std::bitset<32> pb(b);
+    std::bitset<32> e(even);
+    std::bitset<32> o(odd);
+    cout << a;
+    cout << test_name << boolalpha
+         << "\n" << "a: " << pa
+         << "\n" << "b: " << pb
+         << "\n" << "e: " << e
+         << "\n" << "o: " << o
+         << "\n" << (r0 == even) << " " << (r1 == odd) 
+         << endl;
 }
 
 int main()
@@ -93,10 +102,13 @@ int main()
 
 
     {   // combining tests 1,2,3,6
-        unsigned int a = ;  //
-        unsigned int b = ;  //
-        ans = 0x020A55A9;
-        pairwise_sum(a, b, ans, "Test 10");
+        unsigned int a = 0;  // 1010 0101
+        unsigned int b = 0;  // 0110 0110
+        
+        unsigned int r0 = 0; // 0100 0011
+        unsigned int r1 = 0; // 0011 0010 (its shifted by >> 2) 
+        
+        pairwise_sum_sep(a, b, r0, r1, "Test 10");
     }
     return 0;
 }
