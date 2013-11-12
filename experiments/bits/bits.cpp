@@ -6,6 +6,7 @@
 */
 
 #include <iostream>
+#include <bitset>
 
 using namespace std;
 
@@ -26,12 +27,18 @@ void pairwise_sum_sep(unsigned int a, unsigned int b, unsigned int r, const stri
     static const unsigned int mask_CC = 0xCCCCCCCC;   // 1100 1100 ...
     static const unsigned int odd_mask  = 0xAAAAAAAA; // odd mask  = 1010 1010 ...
     static const unsigned int even_mask = 0x55555555; // even mask = 0101 0101 ...
-    unsigned int x = a & mask_33;
-    unsigned int y = b & mask_CC;
-    unsigned int d = 0;
+    unsigned int x0 = a & mask_33;
+    unsigned int x1 = b & mask_33;
+    unsigned int even = 0;
+    unsigned int odd = 0;
 
-    d |= (a & even_mask) + ((a & odd_mask)>>1); // from the paper mentioned above in section 6.2
-    d |= (b & even_mask) + ((b & odd_mask)>>1);
+    // sum the lower bits of each nibble
+    even = (x0 & mask_33) + (x1 & mask_33);
+    // sum the upper bits of each nibble
+    odd  = ((x0 & mask_CC) >> 2) + ((x1 & mask_CC) >> 2);
+
+    std::bitset<32> a(even);
+    std::bitset<32> b(odd);
     cout << test_name << " " << boolalpha << (r == d) << endl;
 }
 
