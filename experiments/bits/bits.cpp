@@ -45,6 +45,8 @@ void parallel_sum(unsigned int x0, unsigned int x1, unsigned int r0, unsigned in
          // << "\n\t" << "e: " << e  << " o: " << o
          // << "\n\t" << (r0 == even) << " " << (r1 == odd)
          // << endl;
+    std::bitset<32> total(r0+r1);
+    cout << total << endl;
 }
 
 int main()
@@ -143,6 +145,8 @@ int main()
         unsigned int r0 = 0x43334422; // 0010 0010
         unsigned int r1 = 0x32424424; // 0010 0100 (its shifted by >> 2)
 
+        // 0111 0101 0111 0101 1000 1000 0100 0110 from console
+        // 0111 0101 0111 0101 1000 1000 0100 0110 my sum
         parallel_sum(a, b, r0, r1, "Test 14");
     }
     return 0;
