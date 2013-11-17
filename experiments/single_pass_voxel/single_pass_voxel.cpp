@@ -1,5 +1,5 @@
 /**
-    Quick little experiment to see how long it takes to render to a texture and read it back.
+    Create a
 */
 #include <iostream>
 #include <fstream>
@@ -49,16 +49,8 @@ namespace {
     {
         enum type
         {
-            QUAD,
-            MAX
-        };
-    }
-
-    namespace pipeline
-    {
-        enum type
-        {
-            QUAD,
+            SIGNLE,
+            SEPARABLE,
             MAX
         };
     }
@@ -72,23 +64,25 @@ namespace {
         };
     }
 
-    namespace framebuffer
+    struct Framebuffer
     {
-        GLuint TextureName = 0;
-        GLuint FramebufferName = 0;
-        GLuint Width = WindowWidth;
-        GLuint Height = WindowHeight;
-        GLuint ComponentCount = 1;
-        GLint  InternalFormat = GL_RED;
-        GLint  Format = GL_RED;
-        GLint  Type = GL_UNSIGNED_INT;
-    }
+        GLuint  TextureName;
+        GLuint  FramebufferName;
+        GLuint  ComponentCount;
+        GLint   InternalFormat;
+        GLsizei Width;
+        GLsizei Height;
+        GLenum  Format;
+        GLenum  Type;
+    };
 
     GLuint VAO[vao::MAX] = {0};
     GLuint Buffer[buffer::MAX] = {0};
     GLuint64 BufferAddr[addr::MAX] = {0};
     GLuint Program[program::MAX] = {0};
-    GLuint Pipeline[pipeline::MAX] = {0};
+
+    Framebuffer VoxelData;
+    Framebuffer DensityData[2];
 
     const GLsizei QuadVertCount = 4;
     const GLsizei QuadSize = QuadVertCount * sizeof(glm::vec2);
@@ -125,7 +119,7 @@ void initGLFW()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
-    glfwWindow = glfwCreateWindow( WindowWidth, WindowHeight, "Round Trip Demo", NULL, NULL );
+    glfwWindow = glfwCreateWindow( WindowWidth, WindowHeight, "Mipmap Volume Into Density Map", NULL, NULL );
     if (!glfwWindow)
     {
         glfwTerminate();
@@ -162,9 +156,6 @@ void checkExtensions()
          "GL_NV_shader_buffer_load"             // http://www.opengl.org/registry/specs/NV/shader_buffer_load.txt
         ,"GL_NV_vertex_buffer_unified_memory"   // http://developer.download.nvidia.com/opengl/specs/GL_NV_vertex_buffer_unified_memory.txt
 
-        // mix and match shader stages into a pipeline object
-        ,"GL_ARB_separate_shader_objects"       // http://www.opengl.org/registry/specs/ARB/separate_shader_objects.txt
-
         // debug printing support
         ,"GL_ARB_debug_output"                  // http://www.opengl.org/registry/specs/ARB/debug_output.txt
     };
@@ -174,16 +165,13 @@ void checkExtensions()
     }
 }
 
-/**
-    This texture will be used to tell the indirect
-    rendering commands how many cubes to draw
-*/
-void initTexture()
+GLuint initTexture(GLint internalFormat, GLuint componentCount, GLsizei width, GLsizei height, GLenum format, GLenum type)
 {
-    glGenTextures(1, &framebuffer::TextureName);
-    glBindTexture(GL_TEXTURE_2D, framebuffer::TextureName);
+    GLuint textureName;
+    glGenTextures(1, &textureName);
+    glBindTexture(GL_TEXTURE_2D, textureName);
 
-    unsigned int size = framebuffer::Width * framebuffer::Height * framebuffer::ComponentCount;
+    unsigned int size = width * height * componentCount;
     unsigned int *data = new unsigned int[size];
     for (int i=0; i<size; i+=4)
         data[i] = 0;
@@ -196,12 +184,12 @@ void initTexture()
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
     glTexImage2D(
         GL_TEXTURE_2D, 0,
-        framebuffer::InternalFormat,
-        framebuffer::Width,
-        framebuffer::Height,
+        internalFormat,
+        width,
+        height,
         0,
-        framebuffer::Format,
-        framebuffer::Type,
+        format,
+        type,
         data
     );
 
@@ -209,6 +197,7 @@ void initTexture()
 
     glBindTexture(GL_TEXTURE_2D, 0);
     delete [] data;
+    return textureName;
 }
 
 void checkFBO()
@@ -267,32 +256,37 @@ void checkFBO()
     }
 }
 
-void initFramebuffer()
+void initFramebuffer(Framebuffer& framebuffer)
 {
-    glGenFramebuffers(1, &framebuffer::FramebufferName);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer::FramebufferName);
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebuffer::TextureName, 0);
+    framebuffer.TextureName = initTexture(
+        framebuffer.InternalFormat,
+        framebuffer.ComponentCount,
+        framebuffer.Width,
+        framebuffer.Height,
+        framebuffer.Format,
+        framebuffer.Type
+        );
+
+    glGenFramebuffers(1, &framebuffer.FramebufferName);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.FramebufferName);
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebuffer.TextureName, 0);
 
     // check for completeness
     checkFBO();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void bindFBO()
+void initFramebuffers()
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer::FramebufferName);
-    if ( framebuffer::FramebufferName != 0 )
-        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebuffer::TextureName, 0);
-
-    // make sure nothing broke.
-    checkFBO();
+    initFramebuffer(VoxelData);
+    initFramebuffer(DensityData[0]);
+    initFramebuffer(DensityData[1]);
 }
 
 void createGLObjects()
 {
     glGenVertexArrays(::vao::MAX, VAO);
     glGenBuffers(::buffer::MAX, Buffer);
-    glGenProgramPipelines(::pipeline::MAX, Pipeline);
 }
 
 GLuint createShader(GLuint type, const std::string &fileName)
@@ -354,16 +348,14 @@ void initQuadShader()
     GLuint vert = createShader(GL_VERTEX_SHADER, DataDirectory + "quad.vert");
     GLuint frag = createShader(GL_FRAGMENT_SHADER, DataDirectory + "quad.frag");
 
-    Program[program::QUAD] = glCreateProgram();
-    glProgramParameteri(Program[program::QUAD], GL_PROGRAM_SEPARABLE, GL_TRUE);
-    glAttachShader(Program[program::QUAD], vert);
-    glAttachShader(Program[program::QUAD], frag);
-    glLinkProgram(Program[program::QUAD]);
+    Program[program::SIGNLE] = glCreateProgram();
+    glAttachShader(Program[program::SIGNLE], vert);
+    glAttachShader(Program[program::SIGNLE], frag);
+    glLinkProgram(Program[program::SIGNLE]);
     glDeleteShader(vert);
     glDeleteShader(frag);
 
-    checkShaderLinkage(Program[program::QUAD]);
-    glUseProgramStages(Pipeline[pipeline::QUAD], GL_VERTEX_SHADER_BIT | GL_FRAGMENT_SHADER_BIT, Program[program::QUAD]);
+    checkShaderLinkage(Program[program::SIGNLE]);
 }
 
 void initQuadGeometry()
@@ -408,8 +400,7 @@ void init( int argc, char *argv[])
     checkExtensions();
     ogle::Debug::init();
 
-    initTexture();
-    initFramebuffer();
+    initFramebuffers();
 
     createGLObjects();
 
@@ -418,25 +409,20 @@ void init( int argc, char *argv[])
 
 void renderquad()
 {
-    // the main goal of this render pass is to write to the atomic counter, turn off what we are not going to use.
-    // glDisable(GL_DEPTH_TEST);
-    // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
     glClearColor( 0,0,0,0 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     // using the following framebuffer, update the atmoic counter
-    bindFBO();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // and now "draw" the fullscreen quad to the frame buffer to update the atmoic counter
     // for each pixel attempted to be drawn.
-    glBindProgramPipeline(Pipeline[pipeline::QUAD]);
     glBindVertexArray(VAO[vao::QUAD]);
 
     glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
 
     glBindVertexArray(0);
-    glBindProgramPipeline(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -445,16 +431,6 @@ void runloop()
     while (!glfwWindowShouldClose(glfwWindow)){
         glfwSetTime(0);
         renderquad();
-
-        unsigned int size = framebuffer::Width * framebuffer::Height * framebuffer::ComponentCount;
-        unsigned int *data = new unsigned int[size];
-        glBindTexture(GL_TEXTURE_2D, framebuffer::TextureName);
-        glGetTexImage(GL_TEXTURE_2D, 0, framebuffer::Format, framebuffer::Type, (GLvoid*)data);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        double time = glfwGetTime();
-        cout << "Round trip time: " << time*1000.0 << " milliseconds" << endl;
-        delete [] data;
-
         glfwSwapBuffers(glfwWindow);
         glfwPollEvents();
     }
@@ -462,10 +438,9 @@ void runloop()
 
 void shutdown()
 {
-    glDeleteFramebuffers(1, &framebuffer::FramebufferName);
-    glDeleteTextures(1, &framebuffer::TextureName);
+    // glDeleteFramebuffers(1, &framebuffer::FramebufferName);
+    // glDeleteTextures(1, &framebuffer::TextureName);
 
-    glDeleteProgramPipelines(::pipeline::MAX, Pipeline);
     glDeleteBuffers(::buffer::MAX, Buffer);
     glDeleteVertexArrays(::vao::MAX, VAO);
 
@@ -482,4 +457,57 @@ int main( int argc, char *argv[])
     runloop();
     shutdown();
     exit( EXIT_SUCCESS );
+
+    /**
+        Single pass
+            (128*128) * (3 additions)= 49,152 additions
+
+        Multi pass
+            (256*128) * (1 addition) = 32,768
+                                     +
+            (128*128) * (1 addition) = 16,384
+                                     = 49,152
+    **/
+    // make the 1D texture mask
+    GLuint componentCount = 4;
+    GLuint textureStacks = 1;
+    GLuint length = 128 * textureStacks; // depth of voxel map
+    GLuint size = sizeof(GLuint) * componentCount * length;
+    GLuint *data = new GLuint[size];
+    const GLuint R = 0;
+    const GLuint G = 1;
+    const GLuint B = 2;
+    const GLuint A = 3;
+    const GLuint depth_mask = 0xFFFFFFFF;
+    for (GLuint i=0; i<size; i+=componentCount)
+    {
+        GLuint red_mask = 0;
+        GLuint green_mask = 0;
+        GLuint blue_mask = 0;
+        GLuint alpha_mask = 0;
+
+        if (i < 32){
+            red_mask   = depth_mask >> (i + 1);
+            green_mask = depth_mask;
+            blue_mask  = depth_mask;
+            alpha_mask = depth_mask;
+        }
+        else if (i < 64){
+            green_mask = depth_mask >> (i - 31);
+            blue_mask  = depth_mask;
+            alpha_mask = depth_mask;
+        }
+        else if (i < 96){
+            blue_mask  = depth_mask >> (i - 63);
+            alpha_mask = depth_mask;
+        }
+        else if (i < 128){
+           alpha_mask = depth_mask >> (i - 95);
+        }
+
+        data[i*componentCount + R] = red_mask;
+        data[i*componentCount + G] = green_mask;
+        data[i*componentCount + B] = blue_mask;
+        data[i*componentCount + A] = alpha_mask;
+    }
 }

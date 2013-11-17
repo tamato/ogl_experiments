@@ -5,7 +5,6 @@
 
     To practice, a cube will be drawn in the center of the screen
     Then once that is working, the cube will be instanced to draw 4 times
-    taking an even amount of space on the screen (1 in each quadrant)
     Then any multiple of 4.
 
     The number of times the cube will be drawn is controlled by the size of
@@ -13,7 +12,7 @@
     The drawn is in quotes because the quad is not actually drawn at all.
     The framebuffer used with the quad does not write out to the texture attached to it
     However, in the fragment shader atmoic writes are being used to write to a buffer object
-    that holds the command arguments that controls how many objects to draw.
+    that holds the command arguments that controls how many instances of the cube to draw.
 */
 #include <iostream>
 #include <fstream>
@@ -252,7 +251,7 @@ void initTexture()
     int num_componets = 4;
     unsigned int size = ::ic::TextureSize * ::ic::TextureSize * num_componets;
     unsigned int *data = new unsigned int[size];
-    for (int i=0; i<size; i+=4)
+    for (int i=0; i<size; i+=num_componets)
         data[i] = 0;
 
     // Nvidia has a bug that if these were intergal textures
@@ -659,7 +658,7 @@ void rendercube()
         //  remember my intents as long as this is here.
         glBindBufferBase(GL_UNIFORM_BUFFER, buffer_base_loc::TRANSFORM, Buffer[buffer::CUBE_TRANSFORM]);
 
-        glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 1.f, 100.0f);
+        glm::mat4 Projection = glm::perspective(0.7853f, 4.0f / 3.0f, 1.f, 100.0f);
         glm::mat4 View = glm::mat4(1.0f);
         glm::mat4 Normal = glm::mat4(1.0f);
 

@@ -45,8 +45,8 @@ void parallel_sum(unsigned int x0, unsigned int x1, unsigned int r0, unsigned in
          // << "\n\t" << "e: " << e  << " o: " << o
          // << "\n\t" << (r0 == even) << " " << (r1 == odd)
          // << endl;
-    std::bitset<32> total(r0+r1);
-    cout << total << endl;
+    // std::bitset<32> total(r0+r1);
+    // cout << total << endl;
 }
 
 int main()

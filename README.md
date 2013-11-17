@@ -54,4 +54,8 @@ Finding the amount of time it takes to send a texture to the gpu, write to it an
 ####raster_pattern
 Renders GPU's rasterization pattern
 ####bits
-Messing around with bit twiddling for the paper "Single Pass GPU Voxelization" section 6.2
+Messing around with bit twiddling for the paper "Single Pass GPU Voxelization" section 6.
+####scene_depth
+gets the used depth of the scene in a single draw call.
+####single_pass_voxel
+implementing the above paper.
