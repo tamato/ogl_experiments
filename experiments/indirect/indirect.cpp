@@ -678,7 +678,7 @@ void rendercube()
         // the center of each cube will be at 0,0,0
         glm::vec3 push_vec(0);
         const GLsizei limit = ic::TextureSize*ic::TextureSize;
-        glm::mat4 *MVP = new glm::mat4[limit];
+        vector<glm::mat4> MVP(limit);
         for (GLsizei i=0; i<limit; ++i){
             glm::mat4 Model = glm::mat4(1.0f);
             if (i % 3 == 0)
@@ -694,8 +694,7 @@ void rendercube()
             push_vec = glm::rotateZ(push_vec, (i/float(limit-1)) * pi2 );
         }
 
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4) * limit, (const GLvoid*)MVP);
-        delete [] MVP;
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4) * limit, (const GLvoid*)MVP.data());
     }
 
 
