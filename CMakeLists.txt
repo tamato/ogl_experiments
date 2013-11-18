@@ -8,11 +8,18 @@ set( performance_experiments_VERSION_MAJOR 1 )
 set( performance_experiments_VERSION_MINOR 0 )
 
 ############################################
-# Flags for C++11 with g++
-list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs")
+# set up to use clang
+set(CMAKE_CC_COMPILER "/usr/local/bin/clang")
+set(CMAKE_CXX_COMPILER "/usr/local/bin/clang++")
 
-#set(CMAKE_BUILD_TYPE DEBUG)
+############################################
+# Flags for C++11 with g++
+#list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs")
+list( APPEND CMAKE_CXX_FLAGS "-std=c++11")
+
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+
+message("compiler: " ${CMAKE_CXX_COMPILER})
 
 ############################################
 # move exe's into bin/

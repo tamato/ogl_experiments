@@ -178,7 +178,7 @@ void initGLFW()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    // glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
     glfwWindow = glfwCreateWindow( WindowWidth, WindowHeight, "Indirect Demo", NULL, NULL );
     if (!glfwWindow)
@@ -677,8 +677,8 @@ void rendercube()
         // rotate the push_vec after each iteration to get into all the locations
         // the center of each cube will be at 0,0,0
         glm::vec3 push_vec(0);
-        GLsizei limit = ic::TextureSize*ic::TextureSize;
-        glm::mat4 MVP[limit];
+        const GLsizei limit = ic::TextureSize*ic::TextureSize;
+        glm::mat4 *MVP = new glm::mat4[limit];
         for (GLsizei i=0; i<limit; ++i){
             glm::mat4 Model = glm::mat4(1.0f);
             if (i % 3 == 0)
@@ -693,7 +693,9 @@ void rendercube()
             push_vec = glm::vec3(4,0,0);
             push_vec = glm::rotateZ(push_vec, (i/float(limit-1)) * pi2 );
         }
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(MVP), &MVP[0][0][0]);
+
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4) * limit, (const GLvoid*)MVP);
+        delete [] MVP;
     }
 
 

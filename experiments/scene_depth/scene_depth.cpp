@@ -97,7 +97,7 @@ void initGLFW()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    // glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
     glfwWindow = glfwCreateWindow( WindowWidth, WindowHeight, "Scene Depth", NULL, NULL );
     if (!glfwWindow)
@@ -300,37 +300,30 @@ void checkShaderLinkage( const GLuint& program)
     }
 }
 
-void initDepthShader()
+void initShader(int program, const std::string& shader)
 {
-    GLuint vert = createShader(GL_VERTEX_SHADER, DataDirectory + "depth.vert");
-    GLuint frag = createShader(GL_FRAGMENT_SHADER, DataDirectory + "depth.frag");
+    GLuint vert = createShader(GL_VERTEX_SHADER, DataDirectory + shader + ".vert");
+    GLuint frag = createShader(GL_FRAGMENT_SHADER, DataDirectory + shader + ".frag");
 
-    Program[program::DEPTH] = glCreateProgram();
-    glAttachShader(Program[program::DEPTH], vert);
-    glAttachShader(Program[program::DEPTH], frag);
-    glLinkProgram(Program[program::DEPTH]);
+    Program[program] = glCreateProgram();
+    glAttachShader(Program[program], vert);
+    glAttachShader(Program[program], frag);
+    glLinkProgram(Program[program]);
     glDeleteShader(vert);
     glDeleteShader(frag);
 
-    checkShaderLinkage(Program[program::DEPTH]);
+    checkShaderLinkage(Program[program]);
+}
 
+void initDepthShader()
+{
+    initShader(program::DEPTH, "depth");
     MVPLoc_Depth = glGetUniformLocation(Program[program::DEPTH], "MVP");
 }
 
 void initMeshShader()
 {
-    GLuint vert = createShader(GL_VERTEX_SHADER, DataDirectory + "mesh.vert");
-    GLuint frag = createShader(GL_FRAGMENT_SHADER, DataDirectory + "mesh.frag");
-
-    Program[program::MESH] = glCreateProgram();
-    glAttachShader(Program[program::MESH], vert);
-    glAttachShader(Program[program::MESH], frag);
-    glLinkProgram(Program[program::MESH]);
-    glDeleteShader(vert);
-    glDeleteShader(frag);
-
-    checkShaderLinkage(Program[program::MESH]);
-
+    initShader(program::MESH, "mesh");
     MVPLoc_Mesh = glGetUniformLocation(Program[program::MESH], "MVP");
 }
 
@@ -446,7 +439,7 @@ void render_mesh(const glm::mat4& mvp)
     glDrawRangeElements(GL_TRIANGLES, 0, VertCount, IndexCount, GL_UNSIGNED_INT, 0);
 }
 
-void render_near(const glm::mat4& mvp)
+void render_min_max(const glm::mat4& mvp, GLenum blend_eq, const std::string& test)
 {
     glViewport( 0, 0, 1, 1);
     bindFBO();
@@ -456,9 +449,11 @@ void render_near(const glm::mat4& mvp)
 
     // the initial value of blend func is ONE, so just leave it be.
     // update blend equation to get MIN MAX values.
-    glBlendEquation(GL_MIN);
+    glBlendEquation(blend_eq);
 
-    glClearColor(1,1,1,1);
+    float clear_color = (blend_eq == GL_MIN) ? 1 : 0;
+
+    glClearColor(clear_color, clear_color, clear_color, clear_color);
     glClear( GL_COLOR_BUFFER_BIT );
 
     glUseProgram(Program[program::DEPTH]);
@@ -470,37 +465,58 @@ void render_near(const glm::mat4& mvp)
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glBindTexture(GL_TEXTURE_2D, TextureName);
+    float data[4];
+    glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, data);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    cout << test << "\t: " << data[0] << endl;
 }
 
-void render_far(const glm::mat4& mvp)
+void cpu_depth_usage(const glm::mat4& mvp, float far)
 {
-    glViewport( 0, 0, 1, 1);
-    bindFBO();
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
+    // find the nearest and furthest verts
+    float nearest=23e8f, furthest=-23e8f;
+    for (glm::vec3 pos : Positions){
+        glm::vec4 dpos = mvp * glm::vec4(pos, 1);
+        // float z = dpos.z/dpos.w;
 
-    // the initial value of blend func is ONE, so just leave it be.
-    // update blend equation to get MIN MAX values.
-    glBlendEquation(GL_MAX);
+        const float Fcoef = 2.0 / log2(far + 1.0);
+        float w = dpos.w;
+        float z = log2(max(1e-6, 1.0 + w)) * Fcoef - 1.0;
+        z /= w;
+        // z = 0.5f * z + 0.5f;
 
-    glClearColor(0,0,0,0);
-    glClear( GL_COLOR_BUFFER_BIT );
+        nearest  = glm::min(nearest,  z);
+        furthest = glm::max(furthest, z);
+    }
+    cout << "CPU: " << nearest << " " << furthest << endl;
+}
 
-    glUseProgram(Program[program::DEPTH]);
-    glUniformMatrix4fv(MVPLoc_Depth, 1, false, (const GLfloat*)&mvp[0][0]);
+void gpu_depth_usage()
+{
+    static float largest_diff = -100000.0f;
+    // get ahold of the values written to the color buffer that has the depth values
+    glBindTexture(GL_TEXTURE_2D, TextureName);
+    float data[4];
+    glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, data);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
-    glDrawRangeElements(GL_TRIANGLES, 0, VertCount, IndexCount, GL_UNSIGNED_INT, 0);
+    if (data[0] < 0.99f && data[3] > 0.01f){
+        if (largest_diff < (data[3] - data[0])){
+            largest_diff = (data[3] - data[0]);
+        }
+    }
 
-    glDisable(GL_BLEND);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    cout << "GPU: " << data[0] << " " << data[3]
+         << " diff: " << largest_diff
+         << endl;
 }
 
 void render()
 {
-    glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 100.f, 10000.0f);
+    float far = 500.0f;
+    glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 1.f, far);
     glm::mat4 View = center_scene(SceneBoundingBox, 45.0f);
     glm::mat4 Model = glm::mat4(1.0f);
 
@@ -508,7 +524,7 @@ void render()
     glm::vec4 lookat = glm::vec4(SceneBoundingBox.Center, 1);
     glm::vec4 dir = lookat - eye_pos;
 
-    float scalar = sin( (float)glfwGetTime() ) * 0.6f + 0.7f;
+    float scalar = sin( (float)glfwGetTime() ) * 0.1f;// + 0.6f;
     eye_pos = dir * scalar;
     View = glm::lookAt(glm::vec3(-eye_pos), SceneBoundingBox.Center, {0,1,0});
 
@@ -521,40 +537,11 @@ void render()
     render_mesh(MVP);
     render_depth(MVP);
 
-    // find the nearest and furthest verts
-    float nearest=23e9f, furthest=-23e9f;
-    for (glm::vec3 pos : Positions){
-        glm::vec4 dpos = MVP * glm::vec4(pos, 1);
-        float z = dpos.z/dpos.w;
-        z = 0.5f * z + 0.5f;
-        nearest  = glm::min(nearest,  z);
-        furthest = glm::max(furthest, z);
-    }
+    cpu_depth_usage(MVP, far);
+    gpu_depth_usage();
 
-    // get ahold of the values written to the color buffer that has the depth values
-    glBindTexture(GL_TEXTURE_2D, TextureName);
-    float data[4];
-    glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, data);
-    cout << "CPU: " << nearest << " " << furthest << endl;
-    cout << "GPU: " << data[0] << " " << data[3] << " eq " << boolalpha << (data[0] == data[3])
-         << endl;
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    // near values
-    render_near(MVP);
-    glBindTexture(GL_TEXTURE_2D, TextureName);
-    float near_data[4];
-    glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, near_data);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    // far values
-    render_far(MVP);
-    glBindTexture(GL_TEXTURE_2D, TextureName);
-    float far_data[4];
-    glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, far_data);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    cout << "2  : " << near_data[0] << " " << far_data[0] << endl;
-    cout << "Eq: " << boolalpha << (near_data[0] == data[0]) << " " << (far_data[0] == data[4]) << endl;
+    render_min_max(MVP, GL_MIN, "near");
+    render_min_max(MVP, GL_MAX, "far");
 }
 
 void runloop()
@@ -570,6 +557,11 @@ void shutdown()
 {
     glDeleteBuffers(::buffer::MAX, Buffer);
     glDeleteVertexArrays(::vao::MAX, VAO);
+
+    for (size_t i=0; i<program::MAX; ++i){
+        glDeleteProgram(Program[i]);
+    }
+
     ogle::Debug::shutdown();
     glfwSetWindowShouldClose(glfwWindow, 1);
     glfwDestroyWindow(glfwWindow);

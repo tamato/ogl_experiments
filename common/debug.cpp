@@ -143,5 +143,5 @@ Debug::Debug(const Debug& other)
 
 Debug& Debug::operator=(const Debug& other)
 {
-
+    return *this;
 }

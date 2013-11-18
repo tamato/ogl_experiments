@@ -10,6 +10,8 @@
 using namespace std;
 using namespace ogle;
 
+// try out: https://github.com/syoyo/tinyobjloader.git
+
 ObjLoader::ObjLoader()
     : TexCoordLayers(1)
 {
