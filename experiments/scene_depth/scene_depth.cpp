@@ -41,6 +41,7 @@ namespace {
         enum type
         {
             POSITIONS,
+            NORMALS,
             INDICES,
             MAX
         };
@@ -345,7 +346,8 @@ BoundingBox get_bounding_box(const std::vector<glm::vec3>& positions)
 void initMesh()
 {
     ogle::ObjLoader loader;
-    loader.load(DataDirectory + "Anatomy_A.obj");
+    // loader.load(DataDirectory + "Anatomy_A.obj");
+    loader.load(DataDirectory + "happy.obj");
     // loader.load(DataDirectory + "sphere.obj");
     VertCount = (GLuint)loader.getVertCount();
     size_t position_attribute_size = loader.getPositionAttributeSize();
@@ -355,22 +357,45 @@ void initMesh()
     size_t index_attribute_size = loader.getIndexAttributeSize();
     size_t index_bytes = IndexCount * index_attribute_size;
 
+    vector<glm::vec3> normals(VertCount, {0,0,0});
     Positions.resize(VertCount);
     const float* positions = loader.getPositions();
-    for (size_t i=0; i<VertCount; i+=3){
-        Positions[i] = glm::vec3(positions[i*3+0], positions[i*3+1], positions[i*3+1]);
+    for (size_t i=0; i<VertCount; ++i){
+        Positions[i] = glm::vec3(positions[i*3+0], positions[i*3+1], positions[i*3+2]);
+    }
+
+    const unsigned int *elements = loader.getIndices();
+    for (size_t i=0; i<IndexCount; i+=3){
+        unsigned int a = elements[i+0];
+        unsigned int b = elements[i+1];
+        unsigned int c = elements[i+2];
+
+        glm::vec3 vec0 = Positions[b] - Positions[a];
+        glm::vec3 vec1 = Positions[c] - Positions[a];
+        glm::vec3 cross = glm::cross(vec1, vec0);
+        // cross = glm::normalize(cross);
+        normals[a] += cross;
+        normals[b] += cross;
+        normals[c] += cross;
+    }
+    for (size_t i=0; i<VertCount; ++i){
+        // if (glm::length(normals[i]) < 0.1) continue;
+        normals[i] = glm::normalize(normals[i]);
     }
 
     SceneBoundingBox = get_bounding_box(Positions);
 
     glBindVertexArray(VAO[vao::MESH]);
     glEnableVertexAttribArray(0); // positions
+    glEnableVertexAttribArray(1); // normals
 
     glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::POSITIONS]);
     glBufferData(GL_ARRAY_BUFFER, position_bytes, (const GLvoid*)loader.getPositions(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::NORMALS]);
+    glBufferData(GL_ARRAY_BUFFER, position_bytes, (const GLvoid*)normals.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer[buffer::INDICES]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_bytes, (const GLvoid*)loader.getIndices(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_bytes, (const GLvoid*)elements, GL_STATIC_DRAW);
     glFinish();
 }
 
@@ -422,7 +447,7 @@ void render_depth(const glm::mat4& mvp)
     glDrawRangeElements(GL_TRIANGLES, 0, VertCount, IndexCount, GL_UNSIGNED_INT, 0);
 
     glDisable(GL_BLEND);
-    glEnable(GL_CULL_FACE);
+    // glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -515,24 +540,26 @@ void gpu_depth_usage()
 
 void render()
 {
-    float far = 500.0f;
+    float far = 500000.0f;
     glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 1.f, far);
     glm::mat4 View = center_scene(SceneBoundingBox, 45.0f);
     glm::mat4 Model = glm::mat4(1.0f);
 
-    glm::vec4 eye_pos = View[3];
-    glm::vec4 lookat = glm::vec4(SceneBoundingBox.Center, 1);
-    glm::vec4 dir = lookat - eye_pos;
+    // glm::vec4 eye_pos = View[3];
+    // glm::vec4 lookat = glm::vec4(SceneBoundingBox.Center, 1);
+    // glm::vec4 dir = lookat - eye_pos;
 
-    float scalar = sin( (float)glfwGetTime() ) * 0.1f;// + 0.6f;
-    eye_pos = dir * scalar;
-    View = glm::lookAt(glm::vec3(-eye_pos), SceneBoundingBox.Center, {0,1,0});
+    // float scalar = sin( (float)glfwGetTime() ) * 0.3 + 0.6f;
+    // eye_pos = dir * scalar;
+    // View = glm::lookAt(glm::vec3(-eye_pos), SceneBoundingBox.Center, {0,1,0});
 
     glm::mat4 MVP = Projection * glm::inverse(View) * Model;
 
     glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::POSITIONS]);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer[buffer::INDICES]);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::NORMALS]);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer[buffer::INDICES]);
 
     render_mesh(MVP);
     render_depth(MVP);

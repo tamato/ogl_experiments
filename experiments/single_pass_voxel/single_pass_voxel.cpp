@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
+#include <bitset>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_CXX11
@@ -17,7 +18,9 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "common.h"
 #include "debug.h"
+#include "test_xor.h"
 
 using namespace std;
 
@@ -26,6 +29,7 @@ namespace {
     GLFWwindow *glfwWindow;
     int WindowWidth = 800;
     int WindowHeight = 640;
+    std::string WindowTitle = "SinglePass Voxelization";
 
     namespace vao
     {
@@ -49,7 +53,8 @@ namespace {
     {
         enum type
         {
-            SIGNLE,
+            SINGLE,
+            DEPTH_TEST,
             SEPARABLE,
             MAX
         };
@@ -64,25 +69,14 @@ namespace {
         };
     }
 
-    struct Framebuffer
-    {
-        GLuint  TextureName;
-        GLuint  FramebufferName;
-        GLuint  ComponentCount;
-        GLint   InternalFormat;
-        GLsizei Width;
-        GLsizei Height;
-        GLenum  Format;
-        GLenum  Type;
-    };
-
     GLuint VAO[vao::MAX] = {0};
     GLuint Buffer[buffer::MAX] = {0};
     GLuint64 BufferAddr[addr::MAX] = {0};
     GLuint Program[program::MAX] = {0};
 
-    Framebuffer VoxelData;
-    Framebuffer DensityData[2];
+    ogle::Framebuffer VoxelData;
+    ogle::Framebuffer DensityData;
+    ogle::Framebuffer DepthMask;
 
     const GLsizei QuadVertCount = 4;
     const GLsizei QuadSize = QuadVertCount * sizeof(glm::vec2);
@@ -92,6 +86,8 @@ namespace {
         glm::vec2( 1, 1),
         glm::vec2(-1, 1),
     };
+
+    ogle::TestXOR Test_XOR_Ops;
 }
 
 void errorCallback(int error, const char* description)
@@ -119,7 +115,7 @@ void initGLFW()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
-    glfwWindow = glfwCreateWindow( WindowWidth, WindowHeight, "Mipmap Volume Into Density Map", NULL, NULL );
+    glfwWindow = glfwCreateWindow( WindowWidth, WindowHeight, WindowTitle.c_str(), NULL, NULL );
     if (!glfwWindow)
     {
         glfwTerminate();
@@ -158,6 +154,9 @@ void checkExtensions()
 
         // debug printing support
         ,"GL_ARB_debug_output"                  // http://www.opengl.org/registry/specs/ARB/debug_output.txt
+        // integer textures
+        ,"GL_ARB_geometry_shader4"              // http://www.opengl.org/registry/specs/ARB/geometry_shader4.txt
+        ,"GL_EXT_texture_integer"               // http://developer.download.nvidia.com/opengl/specs/GL_EXT_texture_integer.txt
     };
     for (auto extension : extensions) {
         if (glfwExtensionSupported(extension.c_str()) == GL_FALSE)
@@ -165,122 +164,27 @@ void checkExtensions()
     }
 }
 
-GLuint initTexture(GLint internalFormat, GLuint componentCount, GLsizei width, GLsizei height, GLenum format, GLenum type)
-{
-    GLuint textureName;
-    glGenTextures(1, &textureName);
-    glBindTexture(GL_TEXTURE_2D, textureName);
-
-    unsigned int size = width * height * componentCount;
-    unsigned int *data = new unsigned int[size];
-    for (int i=0; i<size; i+=4)
-        data[i] = 0;
-
-    // Nvidia has a bug that if these were intergal textures
-    // GL_LINEAR cannot be used and must be GL_NEAREST
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexImage2D(
-        GL_TEXTURE_2D, 0,
-        internalFormat,
-        width,
-        height,
-        0,
-        format,
-        type,
-        data
-    );
-
-    if (glGetError() != GL_NONE) assert(0);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-    delete [] data;
-    return textureName;
-}
-
-void checkFBO()
-{
-    GLenum result = glCheckFramebufferStatus( GL_FRAMEBUFFER );
-    if (result != GL_FRAMEBUFFER_COMPLETE)
-    {
-        cout << "FBO incomplete, error: " << endl;
-        switch (result)
-        {
-            /*********************************************************************
-              These values were found from:
-                http://www.opengl.org/wiki/GLAPI/glCheckFramebufferStatus
-            *********************************************************************/
-            case GL_FRAMEBUFFER_UNDEFINED:
-                cout << "\tGL_FRAMEBUFFER_UNDEFINED\n";
-                cout << "\t-target- is the default framebuffer";
-                break;
-            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-                cout << "\tGL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT\n";
-                cout << "\tthe framebuffer attachment is incomplete";
-                break;
-            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-                cout << "\tGL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT\n";
-                cout << "\tthere are no images attached to the framebuffer";
-                break;
-            case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
-                cout << "\tGL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER\n";
-                cout << "\tone of the color attaches has an object type of GL_NONE";
-                break;
-            case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
-                cout << "\tGL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER\n";
-                cout << "\tGL_READ_BUFFER attached object type of GL_NONE";
-                break;
-            case GL_FRAMEBUFFER_UNSUPPORTED:
-                cout << "\tGL_FRAMEBUFFER_UNSUPPORTED\n";
-                cout << "\tinternal formats conflict with implementation-dependent restrictions";
-                break;
-            case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
-                cout << "\tGL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE\n";
-                cout << "\tis also returned if the value of GL_TEXTURE_FIXED_SAMPLE_LOCATIONS"
-                     << "\tis not the same for all attached textures; or, if the attached images"
-                     << "\tare a mix of renderbuffers and textures, the value of"
-                     << "\tGL_TEXTURE_FIXED_SAMPLE_LOCATIONS is not GL_TRUE for all attached textures.";
-                break;
-            case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
-                cout << "\tGL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS\n";
-                cout << "\ta framebuffer attachment is layered, and a populated attachment is not layered,"
-                     << "\tor if all populated color attachments are not from textures of the same target.";
-                break;
-            default:
-                cout << "\tUnknown error occured.";
-        }
-        cout << endl;
-        assert(0);
-    }
-}
-
-void initFramebuffer(Framebuffer& framebuffer)
-{
-    framebuffer.TextureName = initTexture(
-        framebuffer.InternalFormat,
-        framebuffer.ComponentCount,
-        framebuffer.Width,
-        framebuffer.Height,
-        framebuffer.Format,
-        framebuffer.Type
-        );
-
-    glGenFramebuffers(1, &framebuffer.FramebufferName);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.FramebufferName);
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebuffer.TextureName, 0);
-
-    // check for completeness
-    checkFBO();
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
 void initFramebuffers()
 {
-    initFramebuffer(VoxelData);
-    initFramebuffer(DensityData[0]);
-    initFramebuffer(DensityData[1]);
+    VoxelData.InternalFormat = GL_RGBA32UI;
+    VoxelData.Target = GL_TEXTURE_2D;
+    VoxelData.ComponentCount = 4;
+    VoxelData.Width = WindowWidth;
+    VoxelData.Height = WindowHeight;
+    VoxelData.Format = GL_RGBA_INTEGER;
+    VoxelData.Type = GL_UNSIGNED_INT;
+    VoxelData.TextureNames.resize(1);
+    ogle::initFramebuffer(VoxelData);
+
+    DensityData.InternalFormat = GL_RGBA32I;
+    DensityData.Target = GL_TEXTURE_2D;
+    DensityData.ComponentCount = 4;
+    DensityData.Width = WindowWidth;
+    DensityData.Height = WindowHeight;
+    DensityData.Format = GL_RGBA_INTEGER;
+    DensityData.Type = GL_UNSIGNED_INT;
+    DensityData.TextureNames.resize(2);
+    ogle::initFramebuffer(DensityData);
 }
 
 void createGLObjects()
@@ -289,73 +193,19 @@ void createGLObjects()
     glGenBuffers(::buffer::MAX, Buffer);
 }
 
-GLuint createShader(GLuint type, const std::string &fileName)
-{
-    GLuint shader = glCreateShader(type);
-
-    // load up the file
-    std::ifstream inf(fileName);
-    if (!inf.is_open()) {
-        cerr << "Failed to open " << fileName << endl;
-        assert(0);
-    }
-
-    std::string source;
-    inf.seekg(0, std::ios::end);
-    source.resize(inf.tellg());
-    inf.seekg(0, std::ios::beg);
-    inf.read(&source[0], source.size());
-    inf.close();
-
-    const char *c_str = source.c_str();
-    glShaderSource(shader, 1, &c_str, NULL);
-    glCompileShader(shader);
-
-    int status;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-    if (status == GL_FALSE)
-    {
-        const int maxLen = 1000;
-        int len;
-        char errorBuffer[maxLen]{0};
-        glGetShaderInfoLog(shader, maxLen, &len, errorBuffer);
-        std::cerr   << "Shader Compile with erros:\n"
-                    << errorBuffer << std::endl;
-        assert(0);
-    }
-
-    return shader;
-}
-
-void checkShaderLinkage( const GLuint& program)
-{
-    int status;
-    glGetProgramiv(program, GL_LINK_STATUS, &status);
-    if (status == GL_FALSE)
-    {
-        const int maxLen = 1000;
-        int len;
-        char errorBuffer[maxLen]{0};
-        glGetProgramInfoLog(program, maxLen, &len, errorBuffer);
-        std::cerr   << "Shader Linked with erros:\n"
-                    << errorBuffer << std::endl;
-        assert(0);
-    }
-}
-
 void initQuadShader()
 {
-    GLuint vert = createShader(GL_VERTEX_SHADER, DataDirectory + "quad.vert");
-    GLuint frag = createShader(GL_FRAGMENT_SHADER, DataDirectory + "quad.frag");
+    GLuint vert = ogle::createShader(GL_VERTEX_SHADER, DataDirectory + "quad.vert");
+    GLuint frag = ogle::createShader(GL_FRAGMENT_SHADER, DataDirectory + "quad.frag");
 
-    Program[program::SIGNLE] = glCreateProgram();
-    glAttachShader(Program[program::SIGNLE], vert);
-    glAttachShader(Program[program::SIGNLE], frag);
-    glLinkProgram(Program[program::SIGNLE]);
+    Program[program::SINGLE] = glCreateProgram();
+    glAttachShader(Program[program::SINGLE], vert);
+    glAttachShader(Program[program::SINGLE], frag);
+    glLinkProgram(Program[program::SINGLE]);
     glDeleteShader(vert);
     glDeleteShader(frag);
 
-    checkShaderLinkage(Program[program::SIGNLE]);
+    ogle::checkShaderLinkage(Program[program::SINGLE]);
 }
 
 void initQuadGeometry()
@@ -391,6 +241,31 @@ void setDataDir(int argc, char *argv[])
     DataDirectory = exe_dir + "../data/" + exe_name + "/";
 }
 
+void initWriteToIntTexTest()
+{
+    // creates an int texture
+    // creates fbo with int texture
+    //  int texture 32 wide, 1 tall,
+    // GL_R8UI  GL_RED_INTEGER  ui8
+    DepthMask.Target = GL_TEXTURE_2D;
+    DepthMask.Width = 32;
+    DepthMask.Height = 1;
+    DepthMask.ComponentCount = 1;
+    DepthMask.InternalFormat = GL_R32UI; // !!!!
+    DepthMask.Format = GL_RED_INTEGER;
+    DepthMask.Type = GL_UNSIGNED_INT; // !!!!!
+    DepthMask.TextureNames.resize(1);
+    initFramebuffer(DepthMask);
+
+    // later use
+    //  maybe 128 wide?
+
+    std::map<GLuint, std::string> shaders;
+    shaders[GL_VERTEX_SHADER]   = DataDirectory + "quad.vert";
+    shaders[GL_FRAGMENT_SHADER] = DataDirectory + "depth_mask_test.frag";
+    Program[program::DEPTH_TEST] = ogle::createProgram( shaders );
+}
+
 void init( int argc, char *argv[])
 {
     setDataDir(argc, argv);
@@ -405,10 +280,76 @@ void init( int argc, char *argv[])
     createGLObjects();
 
     initFullScreenQuad();
+
+    initWriteToIntTexTest();
+
+    Test_XOR_Ops.init(DataDirectory);
 }
 
-void renderquad()
+void render_depth_mask_test()
 {
+    glDisable(GL_BLEND);
+    glDisable(GL_DEPTH_TEST);
+
+    glBindVertexArray(VAO[vao::QUAD]);
+    glBindFramebuffer(GL_FRAMEBUFFER, DepthMask.FramebufferName);
+
+    // for fbos: GL_COLOR_ATTACHMENT0
+    //GLenum draw_buffers[1] = {GL_COLOR_ATTACHMENT0};
+    //glDrawBuffers(1, draw_buffers);
+    GLuint clear_color[4] = {0,0,0,0};
+    glClearBufferuiv(GL_COLOR, 0, clear_color);
+    glClear( GL_COLOR_BUFFER_BIT );
+
+    glViewport(0,0,32,1);
+
+    glUseProgram(Program[program::DEPTH_TEST]);
+
+    //glLogicOp();
+
+    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
+
+    glViewport( 0, 0, (GLsizei)WindowWidth, (GLsizei)WindowHeight );
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // now draw the texture
+    glClearColor( 1,0,0,0 );
+    glClear( GL_COLOR_BUFFER_BIT );
+    glUseProgram(Program[program::SINGLE]);
+    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
+    glBindVertexArray(0);
+
+    // read back what was written and lets see the results!
+    unsigned int size = DepthMask.Width * DepthMask.Height * DepthMask.ComponentCount;
+    unsigned int *data = new unsigned int[size];
+
+    glBindTexture(GL_TEXTURE_2D, DepthMask.TextureNames[0]);
+    glGetTexImage(GL_TEXTURE_2D, 0,
+        DepthMask.Format,
+        DepthMask.Type,
+        (GLvoid*)data
+        );
+
+    for (size_t i=0; i<size; i+=DepthMask.ComponentCount)
+        cout << i << "\t: " << data[i] << "\n";
+    delete [] data;
+}
+
+void render()
+{
+    render_depth_mask_test();
+    Test_XOR_Ops.run();
+    exit(EXIT_SUCCESS);
+    return;
+    // for fbos: GL_COLOR_ATTACHMENT0
+    // GLenum draw_buffers[1] = {GL_BACK};
+    // glDrawBuffers(1, draw_buffers);
+    // GLuint clear_color[4] = {0,0,0,0};
+    // glClearBufferuiv(GL_COLOR, 0, clear_color);
+
+    glViewport( 0, 0, (GLsizei)WindowWidth, (GLsizei)WindowHeight );
     glClearColor( 0,0,0,0 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
@@ -429,8 +370,7 @@ void renderquad()
 void runloop()
 {
     while (!glfwWindowShouldClose(glfwWindow)){
-        glfwSetTime(0);
-        renderquad();
+        render();
         glfwSwapBuffers(glfwWindow);
         glfwPollEvents();
     }
@@ -456,30 +396,20 @@ int main( int argc, char *argv[])
     init(argc, argv);
     runloop();
     shutdown();
-    exit( EXIT_SUCCESS );
 
-    /**
-        Single pass
-            (128*128) * (3 additions)= 49,152 additions
-
-        Multi pass
-            (256*128) * (1 addition) = 32,768
-                                     +
-            (128*128) * (1 addition) = 16,384
-                                     = 49,152
-    **/
     // make the 1D texture mask
     GLuint componentCount = 4;
-    GLuint textureStacks = 1;
-    GLuint length = 128 * textureStacks; // depth of voxel map
-    GLuint size = sizeof(GLuint) * componentCount * length;
+    GLuint rows = 128;
+    GLuint stride = sizeof(GLuint) * componentCount;
+    GLuint column_length = stride * 8;
+    GLuint size = stride * rows;
     GLuint *data = new GLuint[size];
     const GLuint R = 0;
-    const GLuint G = 1;
-    const GLuint B = 2;
-    const GLuint A = 3;
+    const GLuint G = sizeof(GLuint)+R;
+    const GLuint B = sizeof(GLuint)+G;
+    const GLuint A = sizeof(GLuint)+B;
     const GLuint depth_mask = 0xFFFFFFFF;
-    for (GLuint i=0; i<size; i+=componentCount)
+    for (GLuint i=0; i<column_length; ++i)
     {
         GLuint red_mask = 0;
         GLuint green_mask = 0;
@@ -487,27 +417,34 @@ int main( int argc, char *argv[])
         GLuint alpha_mask = 0;
 
         if (i < 32){
-            red_mask   = depth_mask >> (i + 1);
+            red_mask   = depth_mask >> (i);
             green_mask = depth_mask;
             blue_mask  = depth_mask;
             alpha_mask = depth_mask;
         }
         else if (i < 64){
-            green_mask = depth_mask >> (i - 31);
+            green_mask = depth_mask >> (i - 32);
             blue_mask  = depth_mask;
             alpha_mask = depth_mask;
         }
         else if (i < 96){
-            blue_mask  = depth_mask >> (i - 63);
+            blue_mask  = depth_mask >> (i - 64);
             alpha_mask = depth_mask;
         }
         else if (i < 128){
-           alpha_mask = depth_mask >> (i - 95);
+           alpha_mask = depth_mask >> (i - 96);
         }
 
-        data[i*componentCount + R] = red_mask;
-        data[i*componentCount + G] = green_mask;
-        data[i*componentCount + B] = blue_mask;
-        data[i*componentCount + A] = alpha_mask;
+        data[i*stride + R] = red_mask;
+        data[i*stride + G] = green_mask;
+        data[i*stride + B] = blue_mask;
+        data[i*stride + A] = alpha_mask;
+        cout << bitset<32>(red_mask)
+             << bitset<32>(green_mask)
+             << bitset<32>(blue_mask)
+             << bitset<32>(alpha_mask)
+             << endl;
     }
+    delete [] data;
+    exit( EXIT_SUCCESS );
 }
