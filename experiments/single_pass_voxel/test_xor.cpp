@@ -125,7 +125,7 @@ void TestXOR::run()
     // enables...
     {
         glEnable(GL_COLOR_LOGIC_OP);    // disables blending
-        glLogicOp(GL_COPY);
+        glLogicOp(GL_XOR);
     }
 
     // set shader and texture
