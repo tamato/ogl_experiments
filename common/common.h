@@ -10,25 +10,6 @@
 
 namespace ogle
 {
-    class TextureObject
-    {
-    public:
-        TextureObject();
-        void initialize();
-        void initialize(GLenum);
-        void setWrapMode(GLenum);
-
-    private:
-        GLenum  Target;
-        GLint   Level;
-        GLint   InternalFormat;
-        GLsizei Width;
-        GLsizei Height;
-        GLint   Border;
-        GLenum  Format;
-        GLenum  Type;
-    };
-
     struct Framebuffer
     {
         std::vector<GLuint>  TextureNames;

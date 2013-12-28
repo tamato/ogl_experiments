@@ -1,5 +1,21 @@
 /**
-    Create a
+    Create a app that voxelizes data into the bits of a texture for volume and density
+    The volume texture is 4 component 32 bit unsigned ints (128 bits)
+    The density texture is actually 2 textures, each the same size as the volume texture.
+    The density texture can also be used as a distance field.
+
+    Based on the paper: "Single-Pass GPU Solid Voxelization for Real-Time Applications"
+    http://maverick.inria.fr/Publications/2008/ED08a/solidvoxelizationAuthorVersion.pdf
+
+    Things left to do:
+    Test out repeated xor'ing (currently its done just once)
+    Update tests to actually test data, not just print to console
+    Fill out MaskTexture to be used for logic ops
+    move "render_depth_mask" to its own file
+    display 3D geometry
+    write 3D geometry to volume texture
+    visualize volume texture -- maybe use CSG for testing?
+    density volume
 */
 #include <iostream>
 #include <fstream>
@@ -305,8 +321,6 @@ void render_depth_mask_test()
 
     glUseProgram(Program[program::DEPTH_TEST]);
 
-    //glLogicOp();
-
     glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
 
@@ -339,7 +353,7 @@ void render_depth_mask_test()
 
 void render()
 {
-    render_depth_mask_test();
+    //render_depth_mask_test();
     Test_XOR_Ops.run();
     exit(EXIT_SUCCESS);
     return;
