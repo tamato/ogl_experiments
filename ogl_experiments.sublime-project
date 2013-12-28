@@ -15,5 +15,41 @@
             //"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
             "selector": "source.cpp"
         }
-    ]
+    ],
+    "settings":
+    {
+        /* project-specific settings for lldb */
+        "lldb.exe": "bin/indirect",
+        // "lldb.args": [],
+        // "lldb.arch": lldb.LLDB_ARCH_DEFAULT
+        "lldb.attach.wait_for_launch": false,
+        "lldb.breakpoints": ["main", {"file": "tests.c", "line": 60}],
+        "lldb.prologue": []
+        /*
+            Other lldb.breakpoints possibilities:
+            "tests.c:42"
+            //{"address": 0xdeadbeef}
+            //{"exception": // lldb::LanguageType, "catch": bool, "throw": bool}
+        */
+        /*
+            BreakpointCreateByLocation (const char *file, uint32_t line);
+            BreakpointCreateByLocation (const lldb::SBFileSpec &file_spec, uint32_t line);
+            BreakpointCreateByName (const char *symbol_name, const char *module_name = NULL);
+            BreakpointCreateByName (const char *symbol_name,
+                                    uint32_t func_name_type,           // Logical OR one or more FunctionNameType enum bits
+                                    const SBFileSpecList &module_list,
+                                    const SBFileSpecList &comp_unit_list);
+            BreakpointCreateByNames (const char *symbol_name[],
+                                     uint32_t num_names,
+                                     uint32_t name_type_mask,           // Logical OR one or more FunctionNameType enum bits
+                                     const SBFileSpecList &module_list,
+                                     const SBFileSpecList &comp_unit_list);
+            BreakpointCreateByRegex (const char *symbol_name_regex, const char *module_name = NULL);
+            BreakpointCreateBySourceRegex (const char *source_regex, const lldb::SBFileSpec &source_file, const char *module_name = NULL);
+            BreakpointCreateForException  (lldb::LanguageType language,
+                                           bool catch_bp,
+                                           bool throw_bp);
+            BreakpointCreateByAddress (addr_t address);
+        */
+    }
 }
