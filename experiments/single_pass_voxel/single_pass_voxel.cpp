@@ -26,6 +26,7 @@
 #include "common.h"
 #include "debug.h"
 #include "test_xor.h"
+#include "objloader.h"
 
 using namespace std;
 
@@ -51,7 +52,9 @@ namespace {
         enum type
         {
             QUAD,
-            MESH0,
+            MESH0_POSITIONS,
+            MESH0_NORMALS,
+            MESH0_INDICES,
             MAX
         };
     }
@@ -98,7 +101,18 @@ namespace {
 
     ogle::TestXOR Test_XOR_Ops;
 
+    GLuint VertCount = 0;
+    GLuint IndexCount = 0;
 
+    vector<glm::vec3> Positions;
+    vector<glm::vec3> Normals;
+
+    struct BoundingBox
+    {
+        glm::vec3 Center;
+        glm::vec3 Extents;
+    };
+    BoundingBox SceneBoundingBox;
 }
 
 void errorCallback(int error, const char* description)
@@ -277,15 +291,85 @@ void initWriteToIntTexTest()
     Program[program::DEPTH_TEST] = ogle::createProgram( shaders );
 }
 
+BoundingBox get_bounding_box(const std::vector<glm::vec3>& positions)
+{
+    glm::vec3 min( 23e9f);
+    glm::vec3 max(-23e9f);
+    for (size_t i=0; i<positions.size(); ++i){
+        min = glm::min(positions[i], min);
+        max = glm::max(positions[i], max);
+    }
+
+    BoundingBox box;
+    box.Center = (max + min) * 0.5f;
+    box.Extents = max - box.Center;
+    return box;
+}
+
 void initMeshShaders()
 {
-
 }
 
 void initMesh()
 {
     // load up mesh
+    ogle::ObjLoader loader;
+    loader.load(DataDirectory + "venus.obj");
+    VertCount = (GLuint)loader.getVertCount();
+    size_t position_attribute_size = loader.getPositionAttributeSize();
+    size_t position_bytes = VertCount * position_attribute_size;
 
+    Positions.resize(VertCount);
+    const float* positions = loader.getPositions();
+    for (size_t i=0; i<VertCount; ++i){
+        Positions[i] = glm::vec3(positions[i*3+0], positions[i*3+1], positions[i*3+2]);
+    }
+
+    size_t normal_attribute_size = loader.getNormalAttributeSize();
+    size_t normal_bytes = VertCount * normal_attribute_size;
+    Normals.resize(VertCount);
+    const float* normals = loader.getNormals();
+    for (size_t i=0; i<VertCount; ++i){
+        Normals[i] = glm::vec3(normals[i*3+0], normals[i*3+1], normals[i*3+2]);
+    }
+
+    IndexCount = (GLuint)loader.getIndexCount();
+    size_t index_attribute_size = loader.getIndexAttributeSize();
+    size_t index_bytes = IndexCount * index_attribute_size;
+
+    SceneBoundingBox = get_bounding_box(Positions);
+
+    // get mesh info into the gpu
+    glBindVertexArray(VAO[vao::MESH]);
+    glEnableVertexAttribArray(0); // positions
+
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::MESH0_POSITIONS]);
+    glBufferData(GL_ARRAY_BUFFER, position_bytes, (const GLvoid*)loader.getPositions(), GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(1); // Normals
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::MESH0_NORMALS]);
+    glBufferData(GL_ARRAY_BUFFER, position_bytes, (const GLvoid*)loader.getNormals(), GL_STATIC_DRAW);
+
+    const unsigned int *elements = loader.getIndices();
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer[buffer::MESH0_INDICES]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_bytes, (const GLvoid*)elements, GL_STATIC_DRAW);
+    glFinish();
+    /**
+
+    glBindVertexArray(VAO[vao::QUAD]);
+    glVertexAttribFormatNV(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2));
+
+    glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
+    glEnableVertexAttribArray(0); // positions
+
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::QUAD]);
+    glBufferData(GL_ARRAY_BUFFER, QuadSize, (const GLvoid*)&QuadVerts[0], GL_STATIC_DRAW);
+
+    // get the buffer addr and then make it resident
+    glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::QUAD]);
+    glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
+
+    */
     initMeshShaders();
 }
 
@@ -424,11 +508,7 @@ void shutdown()
 int main( int argc, char *argv[])
 {
     init(argc, argv);
-    //runloop();
-
-    ogle::ShaderProgram t;
-    t.bind();
-
+    runloop();
     shutdown();
 
     #if 0

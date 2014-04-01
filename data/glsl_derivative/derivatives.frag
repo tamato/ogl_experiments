@@ -12,7 +12,7 @@ void main() {
     float perpTest = dot(p0,p1);
     vec3 color = vec3(0.);
     if (perpTest < 0.0000001){
-       //color.r = 1.0;
+       color.r = 1.0;
     }
 
     vec3 T = cross(N, p1);
@@ -23,7 +23,7 @@ void main() {
        color.b = 1.0;
     }
 
-    //vec3 color = max( vec3(0.), normalize(N) + T + B);
+    color = max( vec3(0.), normalize(N) + T + B);
     Frag = vec4(color,1.);
 }
 
