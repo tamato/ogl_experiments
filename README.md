@@ -48,7 +48,7 @@ Compares bindless vbo's vrs traditional vbos
 ####indirect
 Learning experiment on how to work with indirect rendering
 ####depth_buffer
-Comparing different strategies on writing out to the depth buffer
+Comparing traditional vs logrithmic writes to the depth buffer
 ####round_trip
 Finding the amount of time it takes to send a texture to the gpu, write to it and then read it back
 ####raster_pattern
@@ -56,6 +56,9 @@ Renders GPU's rasterization pattern
 ####bits
 Messing around with bit twiddling for the paper "Single Pass GPU Voxelization" section 6.
 ####scene_depth
-gets the used depth of the scene in a single draw call.
+Gets the used depth of the scene in a single draw call.
 ####single_pass_voxel
-implementing the above paper.
+Implementing the above paper.
+####glsl_derivative
+A test to see if dFdx(position) and dFdy(position) are orthogonal
+####wire_aa

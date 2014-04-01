@@ -1,19 +1,7 @@
 /**
-    Experiment to learn how to work with indirect rendering techniques.
-
-    Indirect rendering is when rendering commands are issued from the GPU.
-
-    To practice, a cube will be drawn in the center of the screen
-    Then once that is working, the cube will be instanced to draw 4 times
-    taking an even amount of space on the screen (1 in each quadrant)
-    Then any multiple of 4.
-
-    The number of times the cube will be drawn is controlled by the size of
-    the framebuffer the fullscreen quad is being "drawn" with.
-    The drawn is in quotes because the quad is not actually drawn at all.
-    The framebuffer used with the quad does not write out to the texture attached to it
-    However, in the fragment shader atmoic writes are being used to write to a buffer object
-    that holds the command arguments that controls how many objects to draw.
+    Using atomic values to see the pattern of the order and cluster of writing to pixels
+    Based off of:
+    http://renderingpipeline.com/2012/03/gpu-rasterizer-pattern/
 */
 #include <iostream>
 #include <fstream>

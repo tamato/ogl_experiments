@@ -1,12 +1,7 @@
 #include "test_xor.h"
 
-#include "common.h"
-
 #include <iostream>
 #include <map>
-
-#define GLM_FORCE_CXX11
-#include <glm/glm.hpp>
 
 using namespace ogle;
 

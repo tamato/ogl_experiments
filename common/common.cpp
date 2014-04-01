@@ -3,12 +3,61 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 
 namespace {
 
 }
 
 namespace ogle {
+
+    Framebuffer::Framebuffer()
+        : FramebufferName(0)
+        , Target(0)
+        , ComponentCount(0)
+        , InternalFormat(0)
+        , Width(0)
+        , Height(0)
+        , Format(0)
+        , Type(0)
+    {
+
+    }
+
+    ShaderProgram::ShaderProgram() : ProgramName(0), Valid(false) {}
+    ShaderProgram::~ShaderProgram() {
+        shutdown();
+    }
+
+    void ShaderProgram::bind(){
+        if (false == Valid)
+            throw std::runtime_error("Tried using shader program object that was not valid.\n");
+        glUseProgram(ProgramName);
+    }
+
+    void ShaderProgram::collectUniforms(){
+        // older way of doing things,
+        // upgrade to using uniform buffers...
+        int active_uniforms = 0;
+        glGetProgramiv(ProgramName, GL_ACTIVE_UNIFORMS, &active_uniforms);
+
+        for (int i=0; i<active_uniforms; ++i) {
+            const GLuint len = 50;
+            GLsizei used_len = 0;
+            GLsizei uniform_size = 0;
+            GLenum type;
+            char name[len] = {0};
+            glGetActiveUniform(ProgramName, GLuint(i), len, &used_len, &uniform_size, &type, name);
+            name[used_len] = 0;
+            Uniforms[std::string(name)] = glGetUniformLocation(ProgramName, name);
+        }
+    }
+
+    void ShaderProgram::shutdown(){
+        glDeleteProgram(ProgramName);
+        ProgramName = 0;
+        Valid = false;
+    }
 
     GLuint initTexture(GLenum target, GLint internalFormat, GLuint componentCount, GLsizei width, GLsizei height, GLenum format, GLenum type)
     {
@@ -196,5 +245,56 @@ namespace ogle {
 
         checkShaderLinkage(program);
         return program;
+    }
+
+    GLFWwindow*   initGLFW(
+        int major_version,
+        int minor_version,
+        bool debug_ctx,
+        int window_width,
+        int window_height,
+        std::string window_name,
+        key_call_back key_callback,
+        error_call_back err_callback )
+    {
+        glfwSetErrorCallback(err_callback);
+
+        /* Init GLFW */
+        if( !glfwInit() )
+            exit( EXIT_FAILURE );
+
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major_version);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor_version);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+        GLenum debug = debug_ctx ? GL_TRUE : GL_FALSE;
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, debug);
+
+        GLFWwindow* window = glfwCreateWindow( window_width, window_height, window_name.c_str(), NULL, NULL );
+        if (!window)
+        {
+            glfwTerminate();
+            exit( EXIT_FAILURE );
+        }
+
+        glfwMakeContextCurrent(window);
+        glfwSwapInterval( 1 );
+
+        glViewport( 0, 0, (GLsizei)window_width, (GLsizei)window_height );
+
+        glfwSetTime( 0.0 );
+        glfwSetKeyCallback(window, key_callback);
+        return window;
+    }
+
+    void   initGLEW()
+    {
+
+    }
+
+    void   setDataDir(int argc, char *argv[])
+    {
+
     }
 }

@@ -23,17 +23,6 @@
 #include <algorithm>
 #include <bitset>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_CXX11
-// #define GLM_MESSAGES
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/string_cast.hpp>
-
-#define GLEW_NO_GLU
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
 #include "common.h"
 #include "debug.h"
 #include "test_xor.h"
@@ -52,6 +41,7 @@ namespace {
         enum type
         {
             QUAD,
+            MESH,
             MAX
         };
     }
@@ -61,6 +51,7 @@ namespace {
         enum type
         {
             QUAD,
+            MESH0,
             MAX
         };
     }
@@ -72,6 +63,7 @@ namespace {
             SINGLE,
             DEPTH_TEST,
             SEPARABLE,
+            MESH0,
             MAX
         };
     }
@@ -81,6 +73,7 @@ namespace {
         enum type
         {
             QUAD,
+            MESH0,
             MAX
         };
     }
@@ -104,6 +97,8 @@ namespace {
     };
 
     ogle::TestXOR Test_XOR_Ops;
+
+
 }
 
 void errorCallback(int error, const char* description)
@@ -282,6 +277,18 @@ void initWriteToIntTexTest()
     Program[program::DEPTH_TEST] = ogle::createProgram( shaders );
 }
 
+void initMeshShaders()
+{
+
+}
+
+void initMesh()
+{
+    // load up mesh
+
+    initMeshShaders();
+}
+
 void init( int argc, char *argv[])
 {
     setDataDir(argc, argv);
@@ -296,10 +303,12 @@ void init( int argc, char *argv[])
     createGLObjects();
 
     initFullScreenQuad();
+    initMesh();
+
+
 
     initWriteToIntTexTest();
-
-    Test_XOR_Ops.init(DataDirectory);
+    //Test_XOR_Ops.init(DataDirectory);
 }
 
 void render_depth_mask_test()
@@ -353,10 +362,15 @@ void render_depth_mask_test()
 
 void render()
 {
-    //render_depth_mask_test();
-    Test_XOR_Ops.run();
-    exit(EXIT_SUCCESS);
-    return;
+    /**
+     * the following is to test the results of XOR ops
+     */
+    // render_depth_mask_test();
+    // Test_XOR_Ops.run();
+    // exit(EXIT_SUCCESS);
+    // return;
+    // end test xor ops
+
     // for fbos: GL_COLOR_ATTACHMENT0
     // GLenum draw_buffers[1] = {GL_BACK};
     // glDrawBuffers(1, draw_buffers);
@@ -394,6 +408,8 @@ void shutdown()
 {
     // glDeleteFramebuffers(1, &framebuffer::FramebufferName);
     // glDeleteTextures(1, &framebuffer::TextureName);
+    for (const auto& p : Program)
+        glDeleteProgram(p);
 
     glDeleteBuffers(::buffer::MAX, Buffer);
     glDeleteVertexArrays(::vao::MAX, VAO);
@@ -408,9 +424,14 @@ void shutdown()
 int main( int argc, char *argv[])
 {
     init(argc, argv);
-    runloop();
+    //runloop();
+
+    ogle::ShaderProgram t;
+    t.bind();
+
     shutdown();
 
+    #if 0
     // make the 1D texture mask
     GLuint componentCount = 4;
     GLuint rows = 128;
@@ -460,5 +481,6 @@ int main( int argc, char *argv[])
              << endl;
     }
     delete [] data;
+    #endif
     exit( EXIT_SUCCESS );
 }

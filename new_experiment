@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# need to include a part that checks if we are in the /ogl_experiments directory
+if [ -n "$1" ]; then
+    mkdir ./experiments/"$1"
+    touch ./experiments/"$1"/"$1".cpp
+    mkdir ./data/"$1"
+    echo "add_subdirectory(""$1"")" >> ./experiments/CMakeLists.txt
+    echo "createExperiment(""$1"")" >> ./experiments/"$1"/CMakeLists.txt
+else
+    echo "Must include a name for the project"
+fi

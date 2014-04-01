@@ -51,7 +51,7 @@ void parallel_sum(unsigned int x0, unsigned int x1, unsigned int r0, unsigned in
 
 int main()
 {
-    // intermedite density map, 1 voxel is 2 bits, 8 bits total, 4 voxels
+    cout << "All of the following tests should return true" << endl;
 
     // column of colors, 1 voxel is 1 bit, 8 bits total, 8 voxels
     unsigned int c;

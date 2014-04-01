@@ -343,12 +343,25 @@ BoundingBox get_bounding_box(const std::vector<glm::vec3>& positions)
     return box;
 }
 
+float triangle_area(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c)
+{
+    // quickly compute the area of a triangle
+    // based off of Heron's forumla, but done with only 1 sqrt
+    // from: http://www.iquilezles.org/blog/?p=1579
+    float area = 0;
+    float a_ = glm::dot(a,a);
+    float b_ = glm::dot(b,b);
+    float c_ = glm::dot(c,c);
+    area = (2*a_*b_ + 2*b_*c_ + 2*c_*a_ - a_*a_ - b_*b_ - c_*c_) / 16.0f;
+    return area;
+}
+
 void initMesh()
 {
     ogle::ObjLoader loader;
     // loader.load(DataDirectory + "Anatomy_A.obj");
-    loader.load(DataDirectory + "happy.obj");
-    // loader.load(DataDirectory + "sphere.obj");
+    // loader.load(DataDirectory + "happy.obj");
+    loader.load(DataDirectory + "sphere.obj");
     VertCount = (GLuint)loader.getVertCount();
     size_t position_attribute_size = loader.getPositionAttributeSize();
     size_t position_bytes = VertCount * position_attribute_size;
@@ -364,22 +377,29 @@ void initMesh()
         Positions[i] = glm::vec3(positions[i*3+0], positions[i*3+1], positions[i*3+2]);
     }
 
+    cout << "Genterating normals" << endl;
     const unsigned int *elements = loader.getIndices();
     for (size_t i=0; i<IndexCount; i+=3){
         unsigned int a = elements[i+0];
         unsigned int b = elements[i+1];
         unsigned int c = elements[i+2];
 
+        if (a == b) exit(1);
+        if (a == c) exit(1);
+        if (b == c) exit(1);
+
         glm::vec3 vec0 = Positions[b] - Positions[a];
         glm::vec3 vec1 = Positions[c] - Positions[a];
         glm::vec3 cross = glm::cross(vec1, vec0);
+
         // cross = glm::normalize(cross);
         normals[a] += cross;
         normals[b] += cross;
         normals[c] += cross;
+
     }
     for (size_t i=0; i<VertCount; ++i){
-        // if (glm::length(normals[i]) < 0.1) continue;
+        if (glm::dot(normals[i], normals[i]) < 0.1) continue;
         normals[i] = glm::normalize(normals[i]);
     }
 
@@ -454,6 +474,8 @@ void render_depth(const glm::mat4& mvp)
 
 void render_mesh(const glm::mat4& mvp)
 {
+    glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
     glViewport( 0, 0, (GLsizei)WindowWidth, (GLsizei)WindowHeight );
     glClearColor(0.3,0.5,0.7,0);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -541,17 +563,17 @@ void gpu_depth_usage()
 void render()
 {
     float far = 500000.0f;
-    glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 1.f, far);
+    glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, .1f, far);
     glm::mat4 View = center_scene(SceneBoundingBox, 45.0f);
     glm::mat4 Model = glm::mat4(1.0f);
 
-    // glm::vec4 eye_pos = View[3];
-    // glm::vec4 lookat = glm::vec4(SceneBoundingBox.Center, 1);
-    // glm::vec4 dir = lookat - eye_pos;
+    glm::vec4 eye_pos = View[3];
+    glm::vec4 lookat = glm::vec4(SceneBoundingBox.Center, 1);
+    glm::vec4 dir = lookat - eye_pos;
 
-    // float scalar = sin( (float)glfwGetTime() ) * 0.3 + 0.6f;
-    // eye_pos = dir * scalar;
-    // View = glm::lookAt(glm::vec3(-eye_pos), SceneBoundingBox.Center, {0,1,0});
+    float scalar = sin( (float)glfwGetTime() ) * 0.3 + 0.6f;
+    eye_pos = dir * scalar;
+    View = glm::lookAt(glm::vec3(-eye_pos), SceneBoundingBox.Center, {0,1,0});
 
     glm::mat4 MVP = Projection * glm::inverse(View) * Model;
 
@@ -562,13 +584,13 @@ void render()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer[buffer::INDICES]);
 
     render_mesh(MVP);
-    render_depth(MVP);
+    // render_depth(MVP);
 
-    cpu_depth_usage(MVP, far);
-    gpu_depth_usage();
+    // cpu_depth_usage(MVP, far);
+    // gpu_depth_usage();
 
-    render_min_max(MVP, GL_MIN, "near");
-    render_min_max(MVP, GL_MAX, "far");
+    // render_min_max(MVP, GL_MIN, "near");
+    // render_min_max(MVP, GL_MAX, "far");
 }
 
 void runloop()

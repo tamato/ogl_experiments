@@ -1,8 +1,16 @@
 #ifndef common_gl_helpers
 #define common_gl_helpers
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_CXX11
+// #define GLM_MESSAGES
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
+
 #define GLEW_NO_GLU
 #include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 #include <string>
 #include <vector>
@@ -12,6 +20,7 @@ namespace ogle
 {
     struct Framebuffer
     {
+        Framebuffer();
         std::vector<GLuint>  TextureNames;
         GLuint  FramebufferName;
         GLenum  Target;
@@ -21,6 +30,20 @@ namespace ogle
         GLsizei Height;
         GLenum  Format;
         GLenum  Type;
+    };
+
+    struct ShaderProgram {
+        GLuint ProgramName;
+        std::map<std::string, GLint> Uniforms;
+
+        ShaderProgram();
+        ~ShaderProgram();
+        void bind();
+        void collectUniforms();
+        void shutdown();
+
+    private:
+        bool Valid; // program has been init'd and has not been deleted yet
     };
 
     GLuint initTexture(GLenum target, GLint internalFormat, GLuint componentCount, GLsizei width, GLsizei height, GLenum format, GLenum type);
@@ -33,7 +56,17 @@ namespace ogle
     GLuint createShader(GLenum type, const std::string& filename);
     GLuint createProgram( const std::map<GLuint, std::string>& shaders );
 
-    // misc
+    // setup
+    typedef void (APIENTRY *key_call_back)(GLFWwindow*, int, int, int, int);
+    typedef void (APIENTRY *error_call_back)(int, const char*);
+    GLFWwindow*  initGLFW(int major_version,
+                    int minor_version,
+                    bool debug_ctx,
+                    int window_width,
+                    int window_height,
+                    std::string window_name,
+                    key_call_back key_callback,
+                    error_call_back err_callback);
     void   initGLEW();
     void   setDataDir(int argc, char *argv[]);
 }

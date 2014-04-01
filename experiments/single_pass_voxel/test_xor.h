@@ -11,9 +11,6 @@
 #ifndef TEST_XOR_H_
 #define TEST_XOR_H_
 
-#define GLEW_NO_GLU
-#include <GL/glew.h>
-
 #include <string>
 
 #include "common.h"

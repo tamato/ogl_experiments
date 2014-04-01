@@ -6,5 +6,5 @@ in vec3 CameraNormal;
 layout(location = 0, index = 0) out vec4 Frag;
 
 void main() {
-  Frag = vec4(CameraNormal,1);
+  Frag = vec4(abs(CameraNormal),1);
 }
