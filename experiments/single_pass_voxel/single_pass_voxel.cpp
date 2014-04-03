@@ -71,19 +71,8 @@ namespace {
         };
     }
 
-    namespace addr
-    {
-        enum type
-        {
-            QUAD,
-            MESH0,
-            MAX
-        };
-    }
-
     GLuint VAO[vao::MAX] = {0};
     GLuint Buffer[buffer::MAX] = {0};
-    GLuint64 BufferAddr[addr::MAX] = {0};
     GLuint Program[program::MAX] = {0};
 
     ogle::Framebuffer VoxelData;
@@ -113,6 +102,36 @@ namespace {
         glm::vec3 Extents;
     };
     BoundingBox SceneBoundingBox;
+
+    /*
+    struct Renderable
+    {
+        BoundingBox;
+        Transform;
+
+        struct Geometry {
+            vao_name;
+            buffer_names;
+
+            // for draw* commands
+            vert_count;
+            index_count;
+        };
+
+        struct MaterialObject{
+            uint material_name;     // index into a list of all materials
+
+            struct RenderState{
+                uint state_name;    // index into a list of all the different rendering states
+            };
+
+            struct ShaderProgram{
+                program_name;
+                uniform_locations;
+            };
+        }
+    };
+    */
 }
 
 void errorCallback(int error, const char* description)
@@ -236,17 +255,10 @@ void initQuadShader()
 void initQuadGeometry()
 {
     glBindVertexArray(VAO[vao::QUAD]);
-    glVertexAttribFormatNV(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2));
-
-    glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
     glEnableVertexAttribArray(0); // positions
 
     glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::QUAD]);
     glBufferData(GL_ARRAY_BUFFER, QuadSize, (const GLvoid*)&QuadVerts[0], GL_STATIC_DRAW);
-
-    // get the buffer addr and then make it resident
-    glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::QUAD]);
-    glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
 }
 
 void initFullScreenQuad()
@@ -308,6 +320,17 @@ BoundingBox get_bounding_box(const std::vector<glm::vec3>& positions)
 
 void initMeshShaders()
 {
+    GLuint vert = ogle::createShader(GL_VERTEX_SHADER, DataDirectory + "mesh.vert");
+    GLuint frag = ogle::createShader(GL_FRAGMENT_SHADER, DataDirectory + "mesh.frag");
+
+    Program[program::MESH0] = glCreateProgram();
+    glAttachShader(Program[program::MESH0], vert);
+    glAttachShader(Program[program::MESH0], frag);
+    glLinkProgram(Program[program::MESH0]);
+    glDeleteShader(vert);
+    glDeleteShader(frag);
+
+    ogle::checkShaderLinkage(Program[program::MESH0]);
 }
 
 void initMesh()
@@ -354,22 +377,6 @@ void initMesh()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer[buffer::MESH0_INDICES]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_bytes, (const GLvoid*)elements, GL_STATIC_DRAW);
     glFinish();
-    /**
-
-    glBindVertexArray(VAO[vao::QUAD]);
-    glVertexAttribFormatNV(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2));
-
-    glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
-    glEnableVertexAttribArray(0); // positions
-
-    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::QUAD]);
-    glBufferData(GL_ARRAY_BUFFER, QuadSize, (const GLvoid*)&QuadVerts[0], GL_STATIC_DRAW);
-
-    // get the buffer addr and then make it resident
-    glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &BufferAddr[addr::QUAD]);
-    glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
-
-    */
     initMeshShaders();
 }
 
@@ -383,13 +390,10 @@ void init( int argc, char *argv[])
     ogle::Debug::init();
 
     initFramebuffers();
-
     createGLObjects();
 
     initFullScreenQuad();
     initMesh();
-
-
 
     initWriteToIntTexTest();
     //Test_XOR_Ops.init(DataDirectory);
@@ -414,7 +418,7 @@ void render_depth_mask_test()
 
     glUseProgram(Program[program::DEPTH_TEST]);
 
-    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
+    // glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
 
     glViewport( 0, 0, (GLsizei)WindowWidth, (GLsizei)WindowHeight );
@@ -424,7 +428,7 @@ void render_depth_mask_test()
     glClearColor( 1,0,0,0 );
     glClear( GL_COLOR_BUFFER_BIT );
     glUseProgram(Program[program::SINGLE]);
-    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
+    // glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
     glBindVertexArray(0);
 
@@ -442,6 +446,29 @@ void render_depth_mask_test()
     for (size_t i=0; i<size; i+=DepthMask.ComponentCount)
         cout << i << "\t: " << data[i] << "\n";
     delete [] data;
+}
+
+void render_mesh_to_screen()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindVertexArray(VAO[vao::MESH]);
+    glUseProgram(Program[program::SINGLE]);
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::MESH0_POSITIONS]);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::MESH0_NORMALS]);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer[buffer::MESH0_INDICES]);
+    glDrawRangeElements(GL_TRIANGLES, 0, VertCount, IndexCount, GL_UNSIGNED_INT, 0);
+}
+
+void render_fullscreen_quad()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindVertexArray(VAO[vao::QUAD]);
+    glUseProgram(Program[program::SINGLE]);
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::QUAD]);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
 }
 
 void render()
@@ -465,26 +492,16 @@ void render()
     glClearColor( 0,0,0,0 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    // using the following framebuffer, update the atmoic counter
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // and now "draw" the fullscreen quad to the frame buffer to update the atmoic counter
-    // for each pixel attempted to be drawn.
-    glBindVertexArray(VAO[vao::QUAD]);
-
-    glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
-
-    glBindVertexArray(0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // render_mesh_to_screen();
+    render_fullscreen_quad();
 }
 
 void runloop()
 {
     while (!glfwWindowShouldClose(glfwWindow)){
         render();
-        glfwSwapBuffers(glfwWindow);
         glfwPollEvents();
+        glfwSwapBuffers(glfwWindow);
     }
 }
 
