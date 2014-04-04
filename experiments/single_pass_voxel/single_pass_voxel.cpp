@@ -102,6 +102,14 @@ namespace {
         glm::vec3 Extents;
     };
     BoundingBox SceneBoundingBox;
+    glm::mat4 SceneTransform;
+    struct ProjectionPoD
+    {
+        float Fov;
+        float Near;
+        float Far;
+    } ProjectionData;
+    ogle::ShaderProgram MeshShader;
 
     /*
     struct Renderable
@@ -258,6 +266,9 @@ void initQuadGeometry()
     glEnableVertexAttribArray(0); // positions
 
     glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::QUAD]);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::QUAD]);
     glBufferData(GL_ARRAY_BUFFER, QuadSize, (const GLvoid*)&QuadVerts[0], GL_STATIC_DRAW);
 }
 
@@ -331,6 +342,8 @@ void initMeshShaders()
     glDeleteShader(frag);
 
     ogle::checkShaderLinkage(Program[program::MESH0]);
+    MeshShader.ProgramName = Program[program::MESH0];
+    MeshShader.collectUniforms();
 }
 
 void initMesh()
@@ -364,14 +377,16 @@ void initMesh()
 
     // get mesh info into the gpu
     glBindVertexArray(VAO[vao::MESH]);
-    glEnableVertexAttribArray(0); // positions
 
+    glEnableVertexAttribArray(0); // positions
     glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::MESH0_POSITIONS]);
     glBufferData(GL_ARRAY_BUFFER, position_bytes, (const GLvoid*)loader.getPositions(), GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
     glEnableVertexAttribArray(1); // Normals
     glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::MESH0_NORMALS]);
     glBufferData(GL_ARRAY_BUFFER, position_bytes, (const GLvoid*)loader.getNormals(), GL_STATIC_DRAW);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
     const unsigned int *elements = loader.getIndices();
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer[buffer::MESH0_INDICES]);
@@ -394,6 +409,10 @@ void init( int argc, char *argv[])
 
     initFullScreenQuad();
     initMesh();
+    SceneTransform = glm::mat4(1.0f);
+    ProjectionData.Fov = 1.0f;
+    ProjectionData.Near = 1.0f;
+    ProjectionData.Far = 1000.0f;
 
     initWriteToIntTexTest();
     //Test_XOR_Ops.init(DataDirectory);
@@ -448,16 +467,32 @@ void render_depth_mask_test()
     delete [] data;
 }
 
+glm::mat4 center_scene_in_camera()
+{
+    glm::vec3 target = SceneBoundingBox.Center;
+    glm::vec3 up = glm::vec3(0,1,0);
+    glm::vec3 pos = glm::vec3(0);
+    float theta = ProjectionData.Fov * 0.5f;
+    pos.z = glm::length(SceneBoundingBox.Extents) / tanf(theta);
+    return glm::lookAt(target, pos, up);
+}
+
 void render_mesh_to_screen()
 {
+    glm::mat4 proj = glm::perspective(
+        ProjectionData.Fov,
+        float(WindowWidth)/float(WindowHeight),
+        ProjectionData.Near,
+        ProjectionData.Far
+        );
+
+    glm::mat4 view = center_scene_in_camera();
+    glm::mat4 mv = view * SceneTransform;
+    glm::mat4 mvp = proj * mv;
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindVertexArray(VAO[vao::MESH]);
     glUseProgram(Program[program::SINGLE]);
-    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::MESH0_POSITIONS]);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::MESH0_NORMALS]);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer[buffer::MESH0_INDICES]);
     glDrawRangeElements(GL_TRIANGLES, 0, VertCount, IndexCount, GL_UNSIGNED_INT, 0);
 }
 
@@ -466,8 +501,6 @@ void render_fullscreen_quad()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindVertexArray(VAO[vao::QUAD]);
     glUseProgram(Program[program::SINGLE]);
-    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::QUAD]);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
 }
 
@@ -492,8 +525,8 @@ void render()
     glClearColor( 0,0,0,0 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    // render_mesh_to_screen();
-    render_fullscreen_quad();
+    render_mesh_to_screen();
+    // render_fullscreen_quad();
 }
 
 void runloop()

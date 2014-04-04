@@ -49,12 +49,14 @@ namespace ogle {
             char name[len] = {0};
             glGetActiveUniform(ProgramName, GLuint(i), len, &used_len, &uniform_size, &type, name);
             name[used_len] = 0;
-            Uniforms[std::string(name)] = glGetUniformLocation(ProgramName, name);
+            GLint loc = glGetUniformLocation(ProgramName, name);
+            Uniforms[std::string(name)] = loc;
         }
     }
 
     void ShaderProgram::shutdown(){
-        glDeleteProgram(ProgramName);
+        // the ProgramName is stored in an array and is managed by someone else
+        // some sort of communication needs to be set up to notify each other for shutdowns.
         ProgramName = 0;
         Valid = false;
     }

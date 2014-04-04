@@ -32,7 +32,8 @@ namespace ogle
         GLenum  Type;
     };
 
-    struct ShaderProgram {
+    struct ShaderProgram
+    {
         GLuint ProgramName;
         std::map<std::string, GLint> Uniforms;
 
