@@ -503,7 +503,7 @@ void render_mesh_to_screen()
     // add a light to the scene
     {
         // glm::vec3 light_position = glm::vec3(0,0,-500.0f);
-        glm::vec3 light_position = glm::vec3(-2000, 6000, -SceneBoundingBox.Extents.z);
+        glm::vec3 light_position = glm::vec3(-2000, 6000, SceneBoundingBox.Extents.z);
         glUniform3fv(MeshShader.Uniforms["LightPos"], 1, (const GLfloat*)&light_position);
     }
 
