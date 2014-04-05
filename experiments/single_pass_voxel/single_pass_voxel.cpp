@@ -324,7 +324,7 @@ BoundingBox get_bounding_box(const std::vector<glm::vec3>& positions)
     }
 
     BoundingBox box;
-    box.Center = (max + min) * 0.5f + min;
+    box.Center = (max + min) * 0.5f;
     box.Extents = max - box.Center;
     return box;
 }
@@ -473,7 +473,8 @@ glm::mat4 center_scene_in_camera()
     glm::vec3 up = glm::vec3(0,1,0);
     glm::vec3 eye = center;
     float theta = ProjectionData.Fov * 0.5f;
-    eye.z = glm::length(SceneBoundingBox.Extents) / tanf(theta);
+    eye.z += glm::length(SceneBoundingBox.Extents) / tanf(theta);
+    eye += eye * 0.1f;
     return glm::lookAt(eye, center, up);
 }
 
@@ -502,8 +503,8 @@ void render_mesh_to_screen()
 
     // add a light to the scene
     {
-        // glm::vec3 light_position = glm::vec3(0,0,-500.0f);
-        glm::vec3 light_position = glm::vec3(-2000, 6000, SceneBoundingBox.Extents.z);
+        glm::vec3 light_position = SceneBoundingBox.Extents;
+        light_position.z *= -1.0f;
         glUniform3fv(MeshShader.Uniforms["LightPos"], 1, (const GLfloat*)&light_position);
     }
 
