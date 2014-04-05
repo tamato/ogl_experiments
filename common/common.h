@@ -42,9 +42,6 @@ namespace ogle
         void bind();
         void collectUniforms();
         void shutdown();
-
-    private:
-        bool Valid; // program has been init'd and has not been deleted yet
     };
 
     GLuint initTexture(GLenum target, GLint internalFormat, GLuint componentCount, GLsizei width, GLsizei height, GLenum format, GLenum type);

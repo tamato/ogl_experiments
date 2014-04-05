@@ -24,14 +24,19 @@ namespace ogle {
 
     }
 
-    ShaderProgram::ShaderProgram() : ProgramName(0), Valid(false) {}
+    ShaderProgram::ShaderProgram() : ProgramName(0) {}
     ShaderProgram::~ShaderProgram() {
         shutdown();
     }
 
     void ShaderProgram::bind(){
-        if (false == Valid)
-            throw std::runtime_error("Tried using shader program object that was not valid.\n");
+        if (0 == ProgramName){
+            std::string msg = "Tried using shader program object that was not valid. ";
+            msg += __FILE__;
+            msg += " : ";
+            msg += __LINE__;
+            throw std::runtime_error(msg);
+        }
         glUseProgram(ProgramName);
     }
 
@@ -51,6 +56,7 @@ namespace ogle {
             name[used_len] = 0;
             GLint loc = glGetUniformLocation(ProgramName, name);
             Uniforms[std::string(name)] = loc;
+            std::cout << name << " " << loc << std::endl;
         }
     }
 
@@ -58,7 +64,6 @@ namespace ogle {
         // the ProgramName is stored in an array and is managed by someone else
         // some sort of communication needs to be set up to notify each other for shutdowns.
         ProgramName = 0;
-        Valid = false;
     }
 
     GLuint initTexture(GLenum target, GLint internalFormat, GLuint componentCount, GLsizei width, GLsizei height, GLenum format, GLenum type)

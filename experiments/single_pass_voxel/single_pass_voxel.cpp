@@ -324,7 +324,7 @@ BoundingBox get_bounding_box(const std::vector<glm::vec3>& positions)
     }
 
     BoundingBox box;
-    box.Center = (max + min) * 0.5f;
+    box.Center = (max + min) * 0.5f + min;
     box.Extents = max - box.Center;
     return box;
 }
@@ -411,8 +411,8 @@ void init( int argc, char *argv[])
     initMesh();
     SceneTransform = glm::mat4(1.0f);
     ProjectionData.Fov = 1.0f;
-    ProjectionData.Near = 1.0f;
-    ProjectionData.Far = 1000.0f;
+    ProjectionData.Near = 1000.0f;
+    ProjectionData.Far = 10000.0f;
 
     initWriteToIntTexTest();
     //Test_XOR_Ops.init(DataDirectory);
@@ -469,16 +469,22 @@ void render_depth_mask_test()
 
 glm::mat4 center_scene_in_camera()
 {
-    glm::vec3 target = SceneBoundingBox.Center;
+    glm::vec3 center = SceneBoundingBox.Center;
     glm::vec3 up = glm::vec3(0,1,0);
-    glm::vec3 pos = glm::vec3(0);
+    glm::vec3 eye = center;
     float theta = ProjectionData.Fov * 0.5f;
-    pos.z = glm::length(SceneBoundingBox.Extents) / tanf(theta);
-    return glm::lookAt(target, pos, up);
+    eye.z = glm::length(SceneBoundingBox.Extents) / tanf(theta);
+    return glm::lookAt(eye, center, up);
 }
 
 void render_mesh_to_screen()
 {
+    // render state
+    {
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+    }
+
     glm::mat4 proj = glm::perspective(
         ProjectionData.Fov,
         float(WindowWidth)/float(WindowHeight),
@@ -490,20 +496,38 @@ void render_mesh_to_screen()
     glm::mat4 mv = view * SceneTransform;
     glm::mat4 mvp = proj * mv;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    MeshShader.bind();
+    glUniformMatrix4fv(MeshShader.Uniforms["WorldViewProjection"], 1, false, (const GLfloat*)&mvp[0][0]);
+    glUniformMatrix4fv(MeshShader.Uniforms["WorldView"], 1, false, (const GLfloat*)&mv[0][0]);
+
+    // add a light to the scene
+    {
+        // glm::vec3 light_position = glm::vec3(0,0,-500.0f);
+        glm::vec3 light_position = glm::vec3(-2000, 6000, -SceneBoundingBox.Extents.z);
+        glUniform3fv(MeshShader.Uniforms["LightPos"], 1, (const GLfloat*)&light_position);
+    }
+
     glBindVertexArray(VAO[vao::MESH]);
-    glUseProgram(Program[program::SINGLE]);
     glDrawRangeElements(GL_TRIANGLES, 0, VertCount, IndexCount, GL_UNSIGNED_INT, 0);
 }
 
 void render_fullscreen_quad()
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glBindVertexArray(VAO[vao::QUAD]);
     glUseProgram(Program[program::SINGLE]);
+    glBindVertexArray(VAO[vao::QUAD]);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
 }
 
+void render_to_screen()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport( 0, 0, (GLsizei)WindowWidth, (GLsizei)WindowHeight );
+    glClearColor( 0.1f,0.1f,0.2f,0 );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+    render_mesh_to_screen();
+    //render_fullscreen_quad();
+}
 void render()
 {
     /**
@@ -521,12 +545,7 @@ void render()
     // GLuint clear_color[4] = {0,0,0,0};
     // glClearBufferuiv(GL_COLOR, 0, clear_color);
 
-    glViewport( 0, 0, (GLsizei)WindowWidth, (GLsizei)WindowHeight );
-    glClearColor( 0,0,0,0 );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-    render_mesh_to_screen();
-    // render_fullscreen_quad();
+    render_to_screen();
 }
 
 void runloop()
