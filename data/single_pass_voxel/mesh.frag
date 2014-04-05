@@ -13,6 +13,6 @@ void main() {
     float light_dist = length(fragToLight);
     float cosTheta = dot(fragNormal, fragToLight/light_dist);
     cosTheta = clamp(cosTheta, 0, 1);
-    vec3 color = Diffuse * LightColor * cosTheta;// / (light_dist*light_dist);
+    vec3 color = Diffuse * LightColor * cosTheta / (light_dist*light_dist);
     Frag = vec4(color, 1.);
 }
