@@ -65,8 +65,8 @@ namespace {
         {
             SINGLE,
             DEPTH_TEST,
-            SEPARABLE,
             MESH0,
+            VOXEL,
             MAX
         };
     }
@@ -74,10 +74,6 @@ namespace {
     GLuint VAO[vao::MAX] = {0};
     GLuint Buffer[buffer::MAX] = {0};
     GLuint Program[program::MAX] = {0};
-
-    ogle::Framebuffer VoxelData;
-    ogle::Framebuffer DensityData;
-    ogle::Framebuffer DepthMask;
 
     const GLsizei QuadVertCount = 4;
     const GLsizei QuadSize = QuadVertCount * sizeof(glm::vec2);
@@ -110,6 +106,13 @@ namespace {
         float Far;
     } ProjectionData;
     ogle::ShaderProgram MeshShader;
+
+
+    ogle::Framebuffer VoxelData;
+    ogle::Framebuffer DensityData;
+    ogle::Framebuffer DepthMask;
+    ogle::ShaderProgram VoxelShader;
+    GLuint Bitmask;
 
     /*
     struct Renderable
@@ -200,12 +203,8 @@ void initGLEW()
 void checkExtensions()
 {
     vector<string> extensions {
-        // refer to buffer objects by gpu address
-         "GL_NV_shader_buffer_load"             // http://www.opengl.org/registry/specs/NV/shader_buffer_load.txt
-        ,"GL_NV_vertex_buffer_unified_memory"   // http://developer.download.nvidia.com/opengl/specs/GL_NV_vertex_buffer_unified_memory.txt
-
         // debug printing support
-        ,"GL_ARB_debug_output"                  // http://www.opengl.org/registry/specs/ARB/debug_output.txt
+        "GL_ARB_debug_output"                   // http://www.opengl.org/registry/specs/ARB/debug_output.txt
         // integer textures
         ,"GL_ARB_geometry_shader4"              // http://www.opengl.org/registry/specs/ARB/geometry_shader4.txt
         ,"GL_EXT_texture_integer"               // http://developer.download.nvidia.com/opengl/specs/GL_EXT_texture_integer.txt
@@ -214,29 +213,6 @@ void checkExtensions()
         if (glfwExtensionSupported(extension.c_str()) == GL_FALSE)
             cerr << extension << " - is required but not supported on this machine." << endl;
     }
-}
-
-void initFramebuffers()
-{
-    VoxelData.InternalFormat = GL_RGBA32UI;
-    VoxelData.Target = GL_TEXTURE_2D;
-    VoxelData.ComponentCount = 4;
-    VoxelData.Width = WindowWidth;
-    VoxelData.Height = WindowHeight;
-    VoxelData.Format = GL_RGBA_INTEGER;
-    VoxelData.Type = GL_UNSIGNED_INT;
-    VoxelData.TextureNames.resize(1);
-    ogle::initFramebuffer(VoxelData);
-
-    DensityData.InternalFormat = GL_RGBA32I;
-    DensityData.Target = GL_TEXTURE_2D;
-    DensityData.ComponentCount = 4;
-    DensityData.Width = WindowWidth;
-    DensityData.Height = WindowHeight;
-    DensityData.Format = GL_RGBA_INTEGER;
-    DensityData.Type = GL_UNSIGNED_INT;
-    DensityData.TextureNames.resize(2);
-    ogle::initFramebuffer(DensityData);
 }
 
 void createGLObjects()
@@ -395,6 +371,119 @@ void initMesh()
     initMeshShaders();
 }
 
+void initVoxelShader()
+{
+    GLuint vert = ogle::createShader(GL_VERTEX_SHADER, DataDirectory + "voxel.vert");
+    GLuint frag = ogle::createShader(GL_FRAGMENT_SHADER, DataDirectory + "voxel.frag");
+
+    VoxelShader.ProgramName = glCreateProgram();
+    glAttachShader(VoxelShader.ProgramName, vert);
+    glAttachShader(VoxelShader.ProgramName, frag);
+    glLinkProgram(VoxelShader.ProgramName);
+    glDeleteShader(vert);
+    glDeleteShader(frag);
+
+    ogle::checkShaderLinkage(VoxelShader.ProgramName);
+
+    glUseProgram(VoxelShader.ProgramName);
+    VoxelShader.collectUniforms();
+    glUniform1i(VoxelShader.Uniforms["Bitmask"], 0);
+    glUseProgram(0);
+}
+
+void initBitmaskTexture()
+{
+    glGenTextures(1, &Bitmask);
+    glBindTexture(GL_TEXTURE_2D, Bitmask);
+
+    // make the 1D texture mask
+    GLuint componentCount = 4;
+    GLuint rows = 128;
+    GLuint stride = sizeof(GLuint) * componentCount;
+    GLuint column_length = stride * 8;
+    GLuint size = stride * rows;
+    GLuint *data = new GLuint[size];
+    const GLuint R = 0;
+    const GLuint G = sizeof(GLuint)+R;
+    const GLuint B = sizeof(GLuint)+G;
+    const GLuint A = sizeof(GLuint)+B;
+    const GLuint depth_mask = -1;
+    GLuint red_mask = 0;
+    GLuint green_mask = 0;
+    GLuint blue_mask = 0;
+    GLuint alpha_mask = 0;
+    for (GLuint i=0; i<column_length; ++i)
+    {
+        if (i < 32){
+            red_mask   = depth_mask << (31 - i);
+        }
+        else if (i < 64){
+            green_mask = depth_mask << (63 - i);
+        }
+        else if (i < 96){
+            blue_mask  = depth_mask << (95 - i);
+        }
+        else if (i < 128){
+           alpha_mask = depth_mask << (127 - i);
+        }
+
+        data[i*stride + R] = red_mask;
+        data[i*stride + G] = green_mask;
+        data[i*stride + B] = blue_mask;
+        data[i*stride + A] = alpha_mask;
+        // cout << bitset<32>(red_mask)
+        //      << bitset<32>(green_mask)
+        //      << bitset<32>(blue_mask)
+        //      << bitset<32>(alpha_mask)
+        //      << endl;
+    }
+
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    glTexImage2D(
+        GL_TEXTURE_2D, 0,
+        GL_RGBA32I,
+        rows,
+        1,
+        0,
+        GL_RGBA_INTEGER,
+        GL_UNSIGNED_INT,
+        data
+    );
+
+    if (glGetError() != GL_NONE) assert(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    delete [] data;
+}
+
+void initVoxel()
+{
+    VoxelData.InternalFormat = GL_RGBA32UI;
+    VoxelData.Target = GL_TEXTURE_2D;
+    VoxelData.ComponentCount = 4;
+    VoxelData.Width = WindowWidth;
+    VoxelData.Height = WindowHeight;
+    VoxelData.Format = GL_RGBA_INTEGER;
+    VoxelData.Type = GL_UNSIGNED_INT;
+    VoxelData.TextureNames.resize(1);
+    ogle::initFramebuffer(VoxelData);
+
+    DensityData.InternalFormat = GL_RGBA32I;
+    DensityData.Target = GL_TEXTURE_2D;
+    DensityData.ComponentCount = 4;
+    DensityData.Width = WindowWidth;
+    DensityData.Height = WindowHeight;
+    DensityData.Format = GL_RGBA_INTEGER;
+    DensityData.Type = GL_UNSIGNED_INT;
+    DensityData.TextureNames.resize(2);
+    ogle::initFramebuffer(DensityData);
+
+    initVoxelShader();
+    initBitmaskTexture();
+}
+
 void init( int argc, char *argv[])
 {
     setDataDir(argc, argv);
@@ -404,11 +493,11 @@ void init( int argc, char *argv[])
     checkExtensions();
     ogle::Debug::init();
 
-    initFramebuffers();
     createGLObjects();
 
     initFullScreenQuad();
     initMesh();
+    initVoxel();
     SceneTransform = glm::mat4(1.0f);
     ProjectionData.Fov = 1.0f;
     ProjectionData.Near = 1000.0f;
@@ -474,7 +563,7 @@ glm::mat4 center_scene_in_camera()
     glm::vec3 eye = center;
     float theta = ProjectionData.Fov * 0.5f;
     eye.z += glm::length(SceneBoundingBox.Extents) / tanf(theta);
-    eye += eye * 0.1f;
+    eye *= 1.1f;
     return glm::lookAt(eye, center, up);
 }
 
@@ -504,7 +593,6 @@ void render_mesh_to_screen()
     // add a light to the scene
     {
         glm::vec3 light_position = SceneBoundingBox.Extents;
-        light_position.z *= -1.0f;
         glUniform3fv(MeshShader.Uniforms["LightPos"], 1, (const GLfloat*)&light_position);
     }
 
@@ -522,6 +610,8 @@ void render_fullscreen_quad()
 void render_to_screen()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    GLenum draw_buffers[1] = {GL_BACK};
+    glDrawBuffers(1, draw_buffers);
     glViewport( 0, 0, (GLsizei)WindowWidth, (GLsizei)WindowHeight );
     glClearColor( 0.1f,0.1f,0.2f,0 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -529,6 +619,29 @@ void render_to_screen()
     render_mesh_to_screen();
     //render_fullscreen_quad();
 }
+
+void render_to_voxel()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, VoxelData.FramebufferName);
+    glViewport( 0, 0, VoxelData.Width, VoxelData.Height );
+
+    size_t buffer_count = VoxelData.TextureNames.size();
+    GLenum *draw_buffers = new GLenum[buffer_count];
+    for (size_t i=0; i<buffer_count; ++i){
+        draw_buffers[i] = GL_COLOR_ATTACHMENT0 + i;
+    }
+    // need to read the spec, does glDrawBuffers need to be called every frame?
+    std::cerr << "Read spec about when to call glDrawBuffers!" << std::endl;
+    glDrawBuffers(buffer_count, draw_buffers);
+
+    GLuint color[4] = {0,0,0,0};
+    for (size_t i=0; i<buffer_count; ++i){
+        glClearBufferuiv(GL_COLOR, i, color);
+    }
+
+    delete [] draw_buffers;
+}
+
 void render()
 {
     /**
@@ -546,6 +659,7 @@ void render()
     // GLuint clear_color[4] = {0,0,0,0};
     // glClearBufferuiv(GL_COLOR, 0, clear_color);
 
+    render_to_voxel();
     render_to_screen();
 }
 
@@ -580,57 +694,5 @@ int main( int argc, char *argv[])
     init(argc, argv);
     runloop();
     shutdown();
-
-    #if 0
-    // make the 1D texture mask
-    GLuint componentCount = 4;
-    GLuint rows = 128;
-    GLuint stride = sizeof(GLuint) * componentCount;
-    GLuint column_length = stride * 8;
-    GLuint size = stride * rows;
-    GLuint *data = new GLuint[size];
-    const GLuint R = 0;
-    const GLuint G = sizeof(GLuint)+R;
-    const GLuint B = sizeof(GLuint)+G;
-    const GLuint A = sizeof(GLuint)+B;
-    const GLuint depth_mask = 0xFFFFFFFF;
-    for (GLuint i=0; i<column_length; ++i)
-    {
-        GLuint red_mask = 0;
-        GLuint green_mask = 0;
-        GLuint blue_mask = 0;
-        GLuint alpha_mask = 0;
-
-        if (i < 32){
-            red_mask   = depth_mask >> (i);
-            green_mask = depth_mask;
-            blue_mask  = depth_mask;
-            alpha_mask = depth_mask;
-        }
-        else if (i < 64){
-            green_mask = depth_mask >> (i - 32);
-            blue_mask  = depth_mask;
-            alpha_mask = depth_mask;
-        }
-        else if (i < 96){
-            blue_mask  = depth_mask >> (i - 64);
-            alpha_mask = depth_mask;
-        }
-        else if (i < 128){
-           alpha_mask = depth_mask >> (i - 96);
-        }
-
-        data[i*stride + R] = red_mask;
-        data[i*stride + G] = green_mask;
-        data[i*stride + B] = blue_mask;
-        data[i*stride + A] = alpha_mask;
-        cout << bitset<32>(red_mask)
-             << bitset<32>(green_mask)
-             << bitset<32>(blue_mask)
-             << bitset<32>(alpha_mask)
-             << endl;
-    }
-    delete [] data;
-    #endif
     exit( EXIT_SUCCESS );
 }

@@ -1,7 +1,7 @@
 #version 430
 
 in vec4 Position;
-in vec4 Normal;
+in vec3 Normal;
 
 uniform mat4 WorldViewProjection;
 uniform mat4 WorldView;
@@ -13,7 +13,8 @@ out vec3 fragToLight;
 
 void main() {
     gl_Position = WorldViewProjection * Position;
-    fragView = -(WorldView * Position).xyz;
-    fragNormal = normalize(WorldView*Normal).xyz; // there is no guarntee that the normal from the .obj is normalized
-    fragToLight = (WorldView * vec4(LightPos,1.0)).xyz + fragView;
+    vec3 camera_space_pos = (WorldView * Position).xyz;
+    fragView = -camera_space_pos;
+    fragNormal = mat3(WorldView) * Normal;
+    fragToLight = (WorldView * vec4(LightPos,1.0)).xyz - camera_space_pos;
 }
