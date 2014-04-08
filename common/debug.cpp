@@ -28,7 +28,7 @@ void debugOutput(
     unsigned int severity,
     int length,
     const char* message,
-    void* userParam)
+    const void* userParam)
 {
 
     cout << "OGL Debugger Error: \n"

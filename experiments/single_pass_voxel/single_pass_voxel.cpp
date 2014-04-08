@@ -626,20 +626,10 @@ void render_to_voxel()
     glViewport( 0, 0, VoxelData.Width, VoxelData.Height );
 
     size_t buffer_count = VoxelData.TextureNames.size();
-    GLenum *draw_buffers = new GLenum[buffer_count];
-    for (size_t i=0; i<buffer_count; ++i){
-        draw_buffers[i] = GL_COLOR_ATTACHMENT0 + i;
-    }
-    // need to read the spec, does glDrawBuffers need to be called every frame?
-    std::cerr << "Read spec about when to call glDrawBuffers!" << std::endl;
-    glDrawBuffers(buffer_count, draw_buffers);
-
     GLuint color[4] = {0,0,0,0};
     for (size_t i=0; i<buffer_count; ++i){
         glClearBufferuiv(GL_COLOR, i, color);
     }
-
-    delete [] draw_buffers;
 }
 
 void render()

@@ -5,7 +5,7 @@ in vec3 fragView;
 in vec3 fragToLight;
 
 uniform vec3 Diffuse = vec3(.9);
-uniform vec3 Ambient = vec3(.3);
+uniform vec3 Ambient = vec3(0.1,0.1,0.2);
 uniform vec3 LightColor = vec3(1.,1.,.6);
 uniform float LightPower = 500000.0;
 

@@ -118,11 +118,23 @@ namespace ogle {
 
         glGenFramebuffers(1, &framebuffer.FramebufferName);
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.FramebufferName);
-        for (size_t i=0; i<framebuffer.TextureNames.size(); ++i)
-            glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, framebuffer.Target, framebuffer.TextureNames[i], 0);
 
+        // set up draw buffers
+        size_t buffer_count = framebuffer.TextureNames.size();
+        GLenum *draw_buffers = new GLenum[buffer_count];
+        for (size_t i=0; i<buffer_count; ++i){
+            draw_buffers[i] = GL_COLOR_ATTACHMENT0 + i;
+        }
+
+        glDrawBuffers(buffer_count, draw_buffers);
+        delete [] draw_buffers;
+
+        for (size_t i=0; i<framebuffer.TextureNames.size(); ++i){
+            glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, GL_TEXTURE_2D, framebuffer.TextureNames[i], 0);
+        }
         // check for completeness
         ogle::checkFramebufferStatus();
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     void checkFramebufferStatus()
