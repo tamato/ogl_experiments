@@ -1,12 +1,10 @@
 #version 430
 
-in vec4 fragPosition;
-uniform sampler1D BitMask;
-out vec4 Frag[2];
+layout(binding=0) uniform sampler1D BitMask;
+layout(location=0) out vec4 FragOut;
 
 void main() {
-    vec2 coord = vec2(fragPosition.z, 0.);
-    float d = texture(BitMask, coord.x).r;
-    Frag[0] = vec4(vec3(d), 1.);
-    Frag[1] = vec4(vec3(d), 1.);
+    float coord = gl_FragCoord.z*.5+.5;
+    float d = texture(BitMask, coord).r;
+    FragOut = vec4(vec3(d), 1.);
 }

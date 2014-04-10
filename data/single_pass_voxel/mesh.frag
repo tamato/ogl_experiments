@@ -1,8 +1,8 @@
 #version 430
 
-in vec3 fragNormal;
-in vec3 fragView;
-in vec3 fragToLight;
+layout(location=0) in vec3 fragNormal;
+layout(location=1) in vec3 fragView;
+layout(location=2) in vec3 fragToLight;
 
 uniform vec3 Diffuse = vec3(.9);
 uniform vec3 Ambient = vec3(0.1,0.1,0.2);

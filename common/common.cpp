@@ -56,7 +56,6 @@ namespace ogle {
             name[used_len] = 0;
             GLint loc = glGetUniformLocation(ProgramName, name);
             Uniforms[std::string(name)] = loc;
-            std::cout << name << " " << loc << std::endl;
         }
     }
 
@@ -235,7 +234,9 @@ namespace ogle {
             int len;
             char errorBuffer[maxLen]{0};
             glGetShaderInfoLog(shader, maxLen, &len, errorBuffer);
-            std::cerr   << "Shader Compile with erros:\n"
+            std::cerr   << "Shader: " << "\n\t"
+                        << filename << "\n"
+                        << "Failed to compile with errors:\n\t"
                         << errorBuffer << std::endl;
             assert(0);
         }

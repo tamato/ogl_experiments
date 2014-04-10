@@ -6,7 +6,8 @@
 // #define GLM_MESSAGES
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/string_cast.hpp>
+#include <glm/gtc/type_ptr.hpp>         // glm::value_ptr
+#include <glm/gtx/string_cast.hpp>      // glm::to_string
 
 #define GLEW_NO_GLU
 #include <GL/glew.h>

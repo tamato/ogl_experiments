@@ -1,15 +1,15 @@
 #version 430
 
-in vec4 Position;
-in vec3 Normal;
+layout(location=0) in vec4 Position;
+layout(location=1) in vec3 Normal;
 
 uniform mat4 WorldViewProjection;
 uniform mat4 WorldView;
 uniform vec3 LightPos;
 
-out vec3 fragNormal;
-out vec3 fragView;
-out vec3 fragToLight;
+layout(location=0) out vec3 fragNormal;
+layout(location=1) out vec3 fragView;
+layout(location=2) out vec3 fragToLight;
 
 void main() {
     gl_Position = WorldViewProjection * Position;

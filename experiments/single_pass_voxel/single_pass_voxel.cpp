@@ -112,7 +112,7 @@ namespace {
     ogle::Framebuffer DensityData;
     ogle::Framebuffer DepthMask;
     ogle::ShaderProgram VoxelShader;
-    GLuint Bitmask;
+    GLuint BitMask;
 
     /*
     struct Renderable
@@ -208,6 +208,8 @@ void checkExtensions()
         // integer textures
         ,"GL_ARB_geometry_shader4"              // http://www.opengl.org/registry/specs/ARB/geometry_shader4.txt
         ,"GL_EXT_texture_integer"               // http://developer.download.nvidia.com/opengl/specs/GL_EXT_texture_integer.txt
+        // default binding values in shaders for textures
+        ,"GL_ARB_shading_language_420pack"      // http://www.opengl.org/registry/specs/ARB/shading_language_420pack.txt
     };
     for (auto extension : extensions) {
         if (glfwExtensionSupported(extension.c_str()) == GL_FALSE)
@@ -245,7 +247,7 @@ void initQuadGeometry()
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
     glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::QUAD]);
-    glBufferData(GL_ARRAY_BUFFER, QuadSize, (const GLvoid*)&QuadVerts[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, QuadSize, glm::value_ptr(QuadVerts[0]), GL_STATIC_DRAW);
 }
 
 void initFullScreenQuad()
@@ -387,14 +389,14 @@ void initVoxelShader()
 
     glUseProgram(VoxelShader.ProgramName);
     VoxelShader.collectUniforms();
-    glUniform1i(VoxelShader.Uniforms["Bitmask"], 0);
+    glUniform1i(VoxelShader.Uniforms["BitMask"], 0);
     glUseProgram(0);
 }
 
-void initBitmaskTexture()
+void initBitMaskTexture()
 {
-    glGenTextures(1, &Bitmask);
-    glBindTexture(GL_TEXTURE_2D, Bitmask);
+    glGenTextures(1, &BitMask);
+    glBindTexture(GL_TEXTURE_1D, BitMask);
 
     // make the 1D texture mask
     GLuint componentCount = 4;
@@ -438,15 +440,13 @@ void initBitmaskTexture()
         //      << endl;
     }
 
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexImage2D(
-        GL_TEXTURE_2D, 0,
+    glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexImage1D(
+        GL_TEXTURE_1D, 0,
         GL_RGBA32I,
         rows,
-        1,
         0,
         GL_RGBA_INTEGER,
         GL_UNSIGNED_INT,
@@ -454,7 +454,7 @@ void initBitmaskTexture()
     );
 
     if (glGetError() != GL_NONE) assert(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_1D, 0);
     delete [] data;
 }
 
@@ -481,7 +481,7 @@ void initVoxel()
     ogle::initFramebuffer(DensityData);
 
     initVoxelShader();
-    initBitmaskTexture();
+    initBitMaskTexture();
 }
 
 void init( int argc, char *argv[])
@@ -587,13 +587,13 @@ void render_mesh_to_screen()
     glm::mat4 mvp = proj * mv;
 
     MeshShader.bind();
-    glUniformMatrix4fv(MeshShader.Uniforms["WorldViewProjection"], 1, false, (const GLfloat*)&mvp[0][0]);
-    glUniformMatrix4fv(MeshShader.Uniforms["WorldView"], 1, false, (const GLfloat*)&mv[0][0]);
+    glUniformMatrix4fv(MeshShader.Uniforms["WorldViewProjection"], 1, false, glm::value_ptr(mvp));
+    glUniformMatrix4fv(MeshShader.Uniforms["WorldView"], 1, false, glm::value_ptr(mv));
 
     // add a light to the scene
     {
         glm::vec3 light_position = SceneBoundingBox.Extents;
-        glUniform3fv(MeshShader.Uniforms["LightPos"], 1, (const GLfloat*)&light_position);
+        glUniform3fv(MeshShader.Uniforms["LightPos"], 1, glm::value_ptr(light_position));
     }
 
     glBindVertexArray(VAO[vao::MESH]);
@@ -610,14 +610,48 @@ void render_fullscreen_quad()
 void render_to_screen()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    GLenum draw_buffers[1] = {GL_BACK};
-    glDrawBuffers(1, draw_buffers);
     glViewport( 0, 0, (GLsizei)WindowWidth, (GLsizei)WindowHeight );
     glClearColor( 0.1f,0.1f,0.2f,0 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     render_mesh_to_screen();
     //render_fullscreen_quad();
+}
+
+void render_mesh_to_voxel()
+{
+    // render state
+    {
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        glEnable(GL_COLOR_LOGIC_OP);    // disables all color blending
+        glLogicOp(GL_XOR);
+    }
+
+    glm::mat4 proj = glm::perspective(
+        ProjectionData.Fov,
+        float(WindowWidth)/float(WindowHeight),
+        ProjectionData.Near,
+        ProjectionData.Far
+        );
+
+    glm::mat4 view = center_scene_in_camera();
+    glm::mat4 mv = view * SceneTransform;
+    glm::mat4 mvp = proj * mv;
+
+    VoxelShader.bind();
+    glUniformMatrix4fv(VoxelShader.Uniforms["WorldViewProjection"], 1, false, glm::value_ptr(mvp));
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_1D, BitMask);
+
+    glBindVertexArray(VAO[vao::MESH]);
+    glDrawRangeElements(GL_TRIANGLES, 0, VertCount, IndexCount, GL_UNSIGNED_INT, 0);
+
+    // disable render state
+    {
+        glDisable(GL_COLOR_LOGIC_OP);
+    }
 }
 
 void render_to_voxel()
@@ -630,6 +664,8 @@ void render_to_voxel()
     for (size_t i=0; i<buffer_count; ++i){
         glClearBufferuiv(GL_COLOR, i, color);
     }
+
+    render_mesh_to_voxel();
 }
 
 void render()
