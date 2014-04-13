@@ -110,8 +110,8 @@ void TestXOR::run()
         glBindFramebuffer(GL_FRAMEBUFFER, Framebuffer.FramebufferName);
         glViewport(0, 0, Framebuffer.Width, Framebuffer.Height);
 
-        //GLenum draw_buffers[1] = {GL_COLOR_ATTACHMENT0};
-        //glDrawBuffers(1, draw_buffers);
+        GLenum draw_buffers[1] = {GL_COLOR_ATTACHMENT0};
+        glDrawBuffers(1, draw_buffers);
 
         GLuint clear_color[4] = {0,0,0,0};
         glClearBufferuiv(GL_COLOR, 0, clear_color);

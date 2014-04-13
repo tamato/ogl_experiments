@@ -63,7 +63,7 @@ namespace {
     {
         enum type
         {
-            SINGLE,
+            THICKNESS,
             DEPTH_TEST,
             MESH0,
             VOXEL,
@@ -98,6 +98,10 @@ namespace {
         glm::vec3 Extents;
     };
     BoundingBox SceneBoundingBox;
+    glm::mat4 Projection;
+    glm::mat4 View;
+    glm::mat4 MV;
+    glm::mat4 MVP;
     glm::mat4 SceneTransform;
     struct ProjectionPoD
     {
@@ -207,7 +211,9 @@ void checkExtensions()
         "GL_ARB_debug_output"                   // http://www.opengl.org/registry/specs/ARB/debug_output.txt
         // integer textures
         ,"GL_ARB_geometry_shader4"              // http://www.opengl.org/registry/specs/ARB/geometry_shader4.txt
+                                                // for usampler2D and isampler2D
         ,"GL_EXT_texture_integer"               // http://developer.download.nvidia.com/opengl/specs/GL_EXT_texture_integer.txt
+                                                // for RGBA32UI_EXT
         // default binding values in shaders for textures
         ,"GL_ARB_shading_language_420pack"      // http://www.opengl.org/registry/specs/ARB/shading_language_420pack.txt
     };
@@ -228,14 +234,14 @@ void initQuadShader()
     GLuint vert = ogle::createShader(GL_VERTEX_SHADER, DataDirectory + "quad.vert");
     GLuint frag = ogle::createShader(GL_FRAGMENT_SHADER, DataDirectory + "quad.frag");
 
-    Program[program::SINGLE] = glCreateProgram();
-    glAttachShader(Program[program::SINGLE], vert);
-    glAttachShader(Program[program::SINGLE], frag);
-    glLinkProgram(Program[program::SINGLE]);
+    Program[program::THICKNESS] = glCreateProgram();
+    glAttachShader(Program[program::THICKNESS], vert);
+    glAttachShader(Program[program::THICKNESS], frag);
+    glLinkProgram(Program[program::THICKNESS]);
     glDeleteShader(vert);
     glDeleteShader(frag);
 
-    ogle::checkShaderLinkage(Program[program::SINGLE]);
+    ogle::checkShaderLinkage(Program[program::THICKNESS]);
 }
 
 void initQuadGeometry()
@@ -502,6 +508,12 @@ void init( int argc, char *argv[])
     ProjectionData.Fov = 1.0f;
     ProjectionData.Near = 1000.0f;
     ProjectionData.Far = 10000.0f;
+    Projection = glm::perspective(
+        ProjectionData.Fov,
+        float(WindowWidth)/float(WindowHeight),
+        ProjectionData.Near,
+        ProjectionData.Far
+        );
 
     initWriteToIntTexTest();
     //Test_XOR_Ops.init(DataDirectory);
@@ -535,7 +547,7 @@ void render_depth_mask_test()
     // now draw the texture
     glClearColor( 1,0,0,0 );
     glClear( GL_COLOR_BUFFER_BIT );
-    glUseProgram(Program[program::SINGLE]);
+    glUseProgram(Program[program::THICKNESS]);
     // glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
     glBindVertexArray(0);
@@ -575,20 +587,9 @@ void render_mesh_to_screen()
         glEnable(GL_CULL_FACE);
     }
 
-    glm::mat4 proj = glm::perspective(
-        ProjectionData.Fov,
-        float(WindowWidth)/float(WindowHeight),
-        ProjectionData.Near,
-        ProjectionData.Far
-        );
-
-    glm::mat4 view = center_scene_in_camera();
-    glm::mat4 mv = view * SceneTransform;
-    glm::mat4 mvp = proj * mv;
-
     MeshShader.bind();
-    glUniformMatrix4fv(MeshShader.Uniforms["WorldViewProjection"], 1, false, glm::value_ptr(mvp));
-    glUniformMatrix4fv(MeshShader.Uniforms["WorldView"], 1, false, glm::value_ptr(mv));
+    glUniformMatrix4fv(MeshShader.Uniforms["WorldViewProjection"], 1, false, glm::value_ptr(MVP));
+    glUniformMatrix4fv(MeshShader.Uniforms["WorldView"], 1, false, glm::value_ptr(MV));
 
     // add a light to the scene
     {
@@ -602,7 +603,12 @@ void render_mesh_to_screen()
 
 void render_fullscreen_quad()
 {
-    glUseProgram(Program[program::SINGLE]);
+    glEnable(GL_BLEND);
+    glUseProgram(Program[program::THICKNESS]);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, VoxelData.TextureNames[0]);
+
     glBindVertexArray(VAO[vao::QUAD]);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
 }
@@ -615,7 +621,7 @@ void render_to_screen()
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     render_mesh_to_screen();
-    //render_fullscreen_quad();
+    // render_fullscreen_quad();
 }
 
 void render_mesh_to_voxel()
@@ -624,23 +630,13 @@ void render_mesh_to_voxel()
     {
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_CLAMP);
         glEnable(GL_COLOR_LOGIC_OP);    // disables all color blending
         glLogicOp(GL_XOR);
     }
 
-    glm::mat4 proj = glm::perspective(
-        ProjectionData.Fov,
-        float(WindowWidth)/float(WindowHeight),
-        ProjectionData.Near,
-        ProjectionData.Far
-        );
-
-    glm::mat4 view = center_scene_in_camera();
-    glm::mat4 mv = view * SceneTransform;
-    glm::mat4 mvp = proj * mv;
-
     VoxelShader.bind();
-    glUniformMatrix4fv(VoxelShader.Uniforms["WorldViewProjection"], 1, false, glm::value_ptr(mvp));
+    glUniformMatrix4fv(VoxelShader.Uniforms["WorldViewProjection"], 1, false, glm::value_ptr(MVP));
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_1D, BitMask);
@@ -651,6 +647,7 @@ void render_mesh_to_voxel()
     // disable render state
     {
         glDisable(GL_COLOR_LOGIC_OP);
+        glDisable(GL_DEPTH_CLAMP);
     }
 }
 
@@ -685,13 +682,22 @@ void render()
     // GLuint clear_color[4] = {0,0,0,0};
     // glClearBufferuiv(GL_COLOR, 0, clear_color);
 
-    render_to_voxel();
+    // render_to_voxel();
     render_to_screen();
+}
+
+void update(double time_passed)
+{
+    glm::mat4 y_rot = glm::rotate(SceneTransform, float(time_passed), glm::vec3(0,1,0));
+    View = center_scene_in_camera();
+    MV = View * y_rot;
+    MVP =  Projection * MV;
 }
 
 void runloop()
 {
     while (!glfwWindowShouldClose(glfwWindow)){
+        update(glfwGetTime());
         render();
         glfwPollEvents();
         glfwSwapBuffers(glfwWindow);
