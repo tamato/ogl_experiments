@@ -620,8 +620,8 @@ void render_to_screen()
     glClearColor( 0.1f,0.1f,0.2f,0 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    render_mesh_to_screen();
-    // render_fullscreen_quad();
+    // render_mesh_to_screen();
+    render_fullscreen_quad();
 }
 
 void render_mesh_to_voxel()
@@ -682,7 +682,7 @@ void render()
     // GLuint clear_color[4] = {0,0,0,0};
     // glClearBufferuiv(GL_COLOR, 0, clear_color);
 
-    // render_to_voxel();
+    render_to_voxel();
     render_to_screen();
 }
 
