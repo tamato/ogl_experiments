@@ -16,25 +16,22 @@
 #include "common.h"
 
 namespace ogle {
-    class TestXOR {
-        public:
-            TestXOR();
-            ~TestXOR();
+class TestXOR {
+    public:
+        TestXOR();
+        ~TestXOR();
 
-            void init(const std::string& base_dir);
-            void run();
+        void init(const std::string& base_dir);
+        void run();
+        void shutdown();
 
-        private:
-            ogle::Framebuffer Framebuffer;
-            GLuint TextureName;
+    private:
+        Framebuffer Framebuffer;
+        GLuint TextureName;
 
-            GLuint ProgramID;
-            GLuint VBO;
-            GLuint VAO;
-            GLuint64 VBOAddr;
-            GLsizei VertCount;
-            GLsizei VertByteCount;
-    };
+        FullscreenQuad Quad;
+        ShaderProgram Program;
+};
 }
 
 #endif // TEST_XOR_H_

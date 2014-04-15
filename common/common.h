@@ -45,6 +45,22 @@ namespace ogle
         void shutdown();
     };
 
+    struct FullscreenQuad
+    {
+        explicit FullscreenQuad();
+        ~FullscreenQuad();
+
+        void init();
+        void render();
+        void shutdown();
+
+        const GLsizei VertCount;
+        const GLsizei ByteCount;
+        const std::vector<glm::vec2> Verts;
+        GLuint VAO_Name;
+        GLuint BufferName;
+    };
+
     GLuint initTexture(GLenum target, GLint internalFormat, GLuint componentCount, GLsizei width, GLsizei height, GLenum format, GLenum type);
     // framebuffer releated
     void initFramebuffer(Framebuffer& framebuffer);

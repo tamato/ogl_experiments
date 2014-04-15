@@ -26,6 +26,7 @@
 #include "common.h"
 #include "debug.h"
 #include "test_xor.h"
+#include "test_integer_texture.h"
 #include "objloader.h"
 
 using namespace std;
@@ -83,8 +84,6 @@ namespace {
         glm::vec2( 1, 1),
         glm::vec2(-1, 1),
     };
-
-    ogle::TestXOR Test_XOR_Ops;
 
     GLuint VertCount = 0;
     GLuint IndexCount = 0;
@@ -395,7 +394,6 @@ void initVoxelShader()
 
     glUseProgram(VoxelShader.ProgramName);
     VoxelShader.collectUniforms();
-    glUniform1i(VoxelShader.Uniforms["BitMask"], 0);
     glUseProgram(0);
 }
 
@@ -422,16 +420,16 @@ void initBitMaskTexture()
     GLuint alpha_mask = 0;
     for (GLuint i=0; i<column_length; ++i)
     {
-        if (i < 32){
+        if (i < 31){
             red_mask   = depth_mask << (31 - i);
         }
-        else if (i < 64){
+        else if (i>32 && i<63){
             green_mask = depth_mask << (63 - i);
         }
-        else if (i < 96){
+        else if (i>64 && i<95){
             blue_mask  = depth_mask << (95 - i);
         }
-        else if (i < 128){
+        else if (i>96 && i<127){
            alpha_mask = depth_mask << (127 - i);
         }
 
@@ -451,7 +449,7 @@ void initBitMaskTexture()
     glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
     glTexImage1D(
         GL_TEXTURE_1D, 0,
-        GL_RGBA32I,
+        GL_RGBA32UI,
         rows,
         0,
         GL_RGBA_INTEGER,
@@ -473,10 +471,10 @@ void initVoxel()
     VoxelData.Height = WindowHeight;
     VoxelData.Format = GL_RGBA_INTEGER;
     VoxelData.Type = GL_UNSIGNED_INT;
-    VoxelData.TextureNames.resize(1);
+    VoxelData.TextureNames.resize(2);
     ogle::initFramebuffer(VoxelData);
 
-    DensityData.InternalFormat = GL_RGBA32I;
+    DensityData.InternalFormat = GL_RGBA32UI;
     DensityData.Target = GL_TEXTURE_2D;
     DensityData.ComponentCount = 4;
     DensityData.Width = WindowWidth;
@@ -516,56 +514,6 @@ void init( int argc, char *argv[])
         );
 
     initWriteToIntTexTest();
-    //Test_XOR_Ops.init(DataDirectory);
-}
-
-void render_depth_mask_test()
-{
-    glDisable(GL_BLEND);
-    glDisable(GL_DEPTH_TEST);
-
-    glBindVertexArray(VAO[vao::QUAD]);
-    glBindFramebuffer(GL_FRAMEBUFFER, DepthMask.FramebufferName);
-
-    // for fbos: GL_COLOR_ATTACHMENT0
-    //GLenum draw_buffers[1] = {GL_COLOR_ATTACHMENT0};
-    //glDrawBuffers(1, draw_buffers);
-    GLuint clear_color[4] = {0,0,0,0};
-    glClearBufferuiv(GL_COLOR, 0, clear_color);
-    glClear( GL_COLOR_BUFFER_BIT );
-
-    glViewport(0,0,32,1);
-
-    glUseProgram(Program[program::DEPTH_TEST]);
-
-    // glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
-
-    glViewport( 0, 0, (GLsizei)WindowWidth, (GLsizei)WindowHeight );
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // now draw the texture
-    glClearColor( 1,0,0,0 );
-    glClear( GL_COLOR_BUFFER_BIT );
-    glUseProgram(Program[program::THICKNESS]);
-    // glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, BufferAddr[addr::QUAD], QuadSize);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
-    glBindVertexArray(0);
-
-    // read back what was written and lets see the results!
-    unsigned int size = DepthMask.Width * DepthMask.Height * DepthMask.ComponentCount;
-    unsigned int *data = new unsigned int[size];
-
-    glBindTexture(GL_TEXTURE_2D, DepthMask.TextureNames[0]);
-    glGetTexImage(GL_TEXTURE_2D, 0,
-        DepthMask.Format,
-        DepthMask.Type,
-        (GLvoid*)data
-        );
-
-    for (size_t i=0; i<size; i+=DepthMask.ComponentCount)
-        cout << i << "\t: " << data[i] << "\n";
-    delete [] data;
 }
 
 glm::mat4 center_scene_in_camera()
@@ -608,6 +556,8 @@ void render_fullscreen_quad()
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, VoxelData.TextureNames[0]);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, VoxelData.TextureNames[1]);
 
     glBindVertexArray(VAO[vao::QUAD]);
     glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
@@ -636,6 +586,7 @@ void render_mesh_to_voxel()
     }
 
     VoxelShader.bind();
+    glUseProgram(VoxelShader.ProgramName);
     glUniformMatrix4fv(VoxelShader.Uniforms["WorldViewProjection"], 1, false, glm::value_ptr(MVP));
 
     glActiveTexture(GL_TEXTURE0);
@@ -646,6 +597,7 @@ void render_mesh_to_voxel()
 
     // disable render state
     {
+        glEnable(GL_CULL_FACE);
         glDisable(GL_COLOR_LOGIC_OP);
         glDisable(GL_DEPTH_CLAMP);
     }
@@ -667,28 +619,13 @@ void render_to_voxel()
 
 void render()
 {
-    /**
-     * the following is to test the results of XOR ops
-     */
-    // render_depth_mask_test();
-    // Test_XOR_Ops.run();
-    // exit(EXIT_SUCCESS);
-    // return;
-    // end test xor ops
-
-    // for fbos: GL_COLOR_ATTACHMENT0
-    // GLenum draw_buffers[1] = {GL_BACK};
-    // glDrawBuffers(1, draw_buffers);
-    // GLuint clear_color[4] = {0,0,0,0};
-    // glClearBufferuiv(GL_COLOR, 0, clear_color);
-
     render_to_voxel();
     render_to_screen();
 }
 
 void update(double time_passed)
 {
-    glm::mat4 y_rot = glm::rotate(SceneTransform, float(time_passed), glm::vec3(0,1,0));
+    glm::mat4 y_rot = glm::rotate(SceneTransform, 0.0f/*float(time_passed)*/, glm::vec3(0,1,0));
     View = center_scene_in_camera();
     MV = View * y_rot;
     MVP =  Projection * MV;
@@ -721,9 +658,28 @@ void shutdown()
     glfwTerminate();
 }
 
+void run_tests()
+{
+    ogle::Test_Integer_Texture TestInt;
+    TestInt.init(DataDirectory);
+
+    TestInt.check_int_textur_bound();
+    TestInt.read_back_texture();
+    TestInt.write_read_to_fbo();
+    TestInt.shutdown();
+
+    ogle::TestXOR Test_XOR_Ops;
+    Test_XOR_Ops.init(DataDirectory);
+    Test_XOR_Ops.run();
+    Test_XOR_Ops.shutdown();
+}
+
 int main( int argc, char *argv[])
 {
     init(argc, argv);
+
+    run_tests();
+
     runloop();
     shutdown();
     exit( EXIT_SUCCESS );

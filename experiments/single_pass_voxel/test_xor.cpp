@@ -19,43 +19,22 @@ void TestXOR::init(const std::string& base_dir)
 {
     // create the quad
     {
-        glGenVertexArrays(1, &VAO);
-        glBindVertexArray(VAO);
-        glVertexAttribFormatNV(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2));
-
-        glEnableClientState(GL_VERTEX_ATTRIB_ARRAY_UNIFIED_NV);
-        glEnableVertexAttribArray(0); // positions
-
-        VertCount = 4;
-        VertByteCount = VertCount * sizeof(glm::vec2);
-        std::vector<glm::vec2> QuadVerts({
-            glm::vec2(-1,-1),
-            glm::vec2( 1,-1),
-            glm::vec2( 1, 1),
-            glm::vec2(-1, 1),
-        });
-
-        glGenBuffers(1, &VBO);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, VertByteCount, (const GLvoid*)QuadVerts.data(), GL_STATIC_DRAW);
-
-        // get the buffer addr and then make it resident
-        glGetBufferParameterui64vNV(GL_ARRAY_BUFFER, GL_BUFFER_GPU_ADDRESS_NV, &VBOAddr);
-        glMakeBufferResidentNV(GL_ARRAY_BUFFER, GL_READ_ONLY);
+        Quad.init();
     }
 
     // create the shaders for the quad
     {
         std::map<GLuint, std::string> shaders;
-        shaders[GL_VERTEX_SHADER] = base_dir + "xor.vert";
-        shaders[GL_FRAGMENT_SHADER] = base_dir + "xor.frag";
-        ProgramID = createProgram(shaders);
+        shaders[GL_VERTEX_SHADER] = base_dir + "int_texture_test.vert";
+        shaders[GL_FRAGMENT_SHADER] = base_dir + "int_texture_test.frag";
+        Program.ProgramName = createProgram(shaders);
+        Program.collectUniforms();
     }
 
     // framebuffer for the quad to draw too
     {
         Framebuffer.TextureNames.resize(1);
-        Framebuffer.Target = GL_TEXTURE_RECTANGLE;
+        Framebuffer.Target = GL_TEXTURE_2D;
         Framebuffer.ComponentCount = 1;
         Framebuffer.InternalFormat = GL_R32UI;
         Framebuffer.Width = 8;
@@ -110,9 +89,6 @@ void TestXOR::run()
         glBindFramebuffer(GL_FRAMEBUFFER, Framebuffer.FramebufferName);
         glViewport(0, 0, Framebuffer.Width, Framebuffer.Height);
 
-        GLenum draw_buffers[1] = {GL_COLOR_ATTACHMENT0};
-        glDrawBuffers(1, draw_buffers);
-
         GLuint clear_color[4] = {0,0,0,0};
         glClearBufferuiv(GL_COLOR, 0, clear_color);
     }
@@ -125,15 +101,13 @@ void TestXOR::run()
 
     // set shader and texture
     {
-        glUseProgram(ProgramID);
+        glUseProgram(Program.ProgramName);
         glBindTexture(Framebuffer.Target, TextureName);
     }
 
     // draw quad
     {
-        glBindVertexArray(VAO);
-        glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, 0, VBOAddr, VertByteCount);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, VertCount);
+        Quad.render();
     }
 
     // undo opengl state
@@ -149,7 +123,6 @@ void TestXOR::run()
 
     // read back the values
     {
-        std::cout << ":: From TEST XOR -----------------------\n";
         unsigned int size = Framebuffer.Width * Framebuffer.Height * Framebuffer.ComponentCount;
         unsigned int *data = new unsigned int[size];
         glBindTexture(Framebuffer.Target, Framebuffer.TextureNames[0]);
@@ -159,8 +132,22 @@ void TestXOR::run()
             (GLvoid*)data
             );
 
-        for (size_t i=0; i<size; i+=Framebuffer.ComponentCount)
-            std::cout << i << "\t: " << data[i] << "\n";
+        std::cout   << std::boolalpha
+                    << "TestXOR::run:"
+                    << "\n\t0 idx: " << (data[0] == 0xAAAAAAAAu) << " " << data[0]
+                    << "\n\t1 idx: " << (data[1] == 0xFFFFFFFFu) << " " << data[1]
+                    << "\n\t2 idx: " << (data[2] == 0x0u)        << " " << data[2]
+                    << "\n\t3 idx: " << (data[3] == 0xCCCCCCCCu) << " " << data[3]
+                    << "\n\t4 idx: " << (data[4] == 0x33333333u) << " " << data[4]
+                    << "\n\t5 idx: " << (data[5] == 0x88888888u) << " " << data[5]
+                    << "\n\t6 idx: " << (data[6] == 0x11111111u) << " " << data[6]
+                    << "\n\t7 idx: " << (data[7] == 0x44444444u) << " " << data[7]
+                    << std::endl;
         delete [] data;
     }
+}
+
+void TestXOR::shutdown()
+{
+
 }

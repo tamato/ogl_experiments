@@ -56,6 +56,7 @@ namespace ogle {
             name[used_len] = 0;
             GLint loc = glGetUniformLocation(ProgramName, name);
             Uniforms[std::string(name)] = loc;
+            // std::cout << name << " " << loc << std::endl;
         }
     }
 
@@ -63,6 +64,50 @@ namespace ogle {
         // the ProgramName is stored in an array and is managed by someone else
         // some sort of communication needs to be set up to notify each other for shutdowns.
         ProgramName = 0;
+    }
+
+    FullscreenQuad::FullscreenQuad()
+        : VertCount(4)
+        , ByteCount(VertCount * sizeof(glm::vec2))
+        , Verts({
+            glm::vec2(-1,-1),
+            glm::vec2( 1,-1),
+            glm::vec2( 1, 1),
+            glm::vec2(-1, 1)})
+    {
+
+    }
+
+    FullscreenQuad::~FullscreenQuad()
+    {
+        shutdown();
+    }
+
+    void FullscreenQuad::init()
+    {
+        glGenVertexArrays(1, &VAO_Name);
+        glGenBuffers(1, &BufferName);
+
+        glBindVertexArray(VAO_Name);
+        glEnableVertexAttribArray(0); // positions
+
+        glBindBuffer(GL_ARRAY_BUFFER, BufferName);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+        glBindBuffer(GL_ARRAY_BUFFER, BufferName);
+        glBufferData(GL_ARRAY_BUFFER, ByteCount, glm::value_ptr(Verts[0]), GL_STATIC_DRAW);
+    }
+
+    void FullscreenQuad::render()
+    {
+        glBindVertexArray(VAO_Name);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, VertCount);
+    }
+
+    void FullscreenQuad::shutdown()
+    {
+        glDeleteBuffers(1, &BufferName);
+        glDeleteVertexArrays(1, &VAO_Name);
     }
 
     GLuint initTexture(GLenum target, GLint internalFormat, GLuint componentCount, GLsizei width, GLsizei height, GLenum format, GLenum type)
@@ -93,6 +138,12 @@ namespace ogle {
             data
         );
 
+        if (internalFormat == GL_RGBA32UI){
+            GLboolean b;
+            glGetBooleanv(GL_RGBA_INTEGER_MODE_EXT, &b);
+            std::cout << "Textures are bool: " << std::boolalpha << (b == GL_TRUE) << std::endl;
+        }
+
         if (glGetError() != GL_NONE) assert(0);
 
         glBindTexture(target, 0);
@@ -121,7 +172,7 @@ namespace ogle {
         size_t buffer_count = framebuffer.TextureNames.size();
         std::vector<GLenum> draw_buffers(buffer_count);
         for (size_t i=0; i<framebuffer.TextureNames.size(); ++i){
-            glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, GL_TEXTURE_2D, framebuffer.TextureNames[i], 0);
+            glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, framebuffer.Target, framebuffer.TextureNames[i], 0);
             draw_buffers[i] = GL_COLOR_ATTACHMENT0 + i;
         }
 
