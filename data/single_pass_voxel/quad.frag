@@ -13,17 +13,7 @@ void main() {
     uint sum = count.x+count.y+count.z+count.w;
 
     vec4 color = vec4(0);
-    if (sum == 0) color = vec4(0);
-    else if (sum < 31)
-        color = vec4(1,0,0,1);
-    else if (sum < 63)
-        color = vec4(0,1,0,1);
-    else if (sum < 95)
-        color = vec4(0,0,1,1);
-    else if (sum < 127)
-        color = vec4(1,1,1,1);
-    else
-        color = vec4(1,0,1,1);
+    if (sum == 1) color = vec4(1);
 
     //color = vec4( float(abs(sum))/128. );
     Frag = color;

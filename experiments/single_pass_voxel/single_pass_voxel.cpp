@@ -495,9 +495,9 @@ void render_mesh_to_voxel()
 {
     // render state
     {
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
-        glEnable(GL_DEPTH_CLAMP);
+        // glDisable(GL_DEPTH_TEST);
+        // glDisable(GL_CULL_FACE);
+        // glEnable(GL_DEPTH_CLAMP);
         glEnable(GL_COLOR_LOGIC_OP);    // disables all color blending
         glLogicOp(GL_XOR);
     }

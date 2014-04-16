@@ -24,6 +24,6 @@ void main() {
         FragOut1 = mask;
     }
 
-    FragOut0 = uvec4(0xFF);
-    FragOut1 = uvec4(0xFF);
+    FragOut0 = uvec4(0x1);
+    FragOut1 = uvec4(0xFFFFFFFF);
 }
