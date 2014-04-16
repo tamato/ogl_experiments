@@ -27,14 +27,13 @@ void TestXOR::init(const std::string& base_dir)
         std::map<GLuint, std::string> shaders;
         shaders[GL_VERTEX_SHADER] = base_dir + "int_texture_test.vert";
         shaders[GL_FRAGMENT_SHADER] = base_dir + "int_texture_test.frag";
-        Program.ProgramName = createProgram(shaders);
-        Program.collectUniforms();
+        Program.init(shaders);
     }
 
     // framebuffer for the quad to draw too
     {
         Framebuffer.TextureNames.resize(1);
-        Framebuffer.Target = GL_TEXTURE_2D;
+        Framebuffer.Target = GL_TEXTURE_2D; // does not like it when GL_TEXTURE_RECTANGLE is used.
         Framebuffer.ComponentCount = 1;
         Framebuffer.InternalFormat = GL_R32UI;
         Framebuffer.Width = 8;
@@ -101,7 +100,7 @@ void TestXOR::run()
 
     // set shader and texture
     {
-        glUseProgram(Program.ProgramName);
+        Program.bind();
         glBindTexture(Framebuffer.Target, TextureName);
     }
 

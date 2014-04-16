@@ -23,4 +23,7 @@ void main() {
         uvec4 mask = texture(BitMask, coord);
         FragOut1 = mask;
     }
+
+    FragOut0 = uvec4(0xFF);
+    FragOut1 = uvec4(0xFF);
 }

@@ -40,9 +40,14 @@ namespace ogle
 
         ShaderProgram();
         ~ShaderProgram();
+        void init( const std::map<GLuint, std::string>& shaders );
         void bind();
         void collectUniforms();
         void shutdown();
+
+    private:
+        GLuint createShader(GLenum type, const std::string& filename);
+        void   checkShaderLinkage( const GLuint& program);
     };
 
     struct FullscreenQuad
@@ -65,11 +70,6 @@ namespace ogle
     // framebuffer releated
     void initFramebuffer(Framebuffer& framebuffer);
     void checkFramebufferStatus();
-
-    // shader related
-    void   checkShaderLinkage( const GLuint& program);
-    GLuint createShader(GLenum type, const std::string& filename);
-    GLuint createProgram( const std::map<GLuint, std::string>& shaders );
 
     // setup
     typedef void (APIENTRY *key_call_back)(GLFWwindow*, int, int, int, int);

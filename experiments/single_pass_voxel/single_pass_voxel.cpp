@@ -42,7 +42,6 @@ namespace {
     {
         enum type
         {
-            QUAD,
             MESH,
             MAX
         };
@@ -52,7 +51,6 @@ namespace {
     {
         enum type
         {
-            QUAD,
             MESH0_POSITIONS,
             MESH0_NORMALS,
             MESH0_INDICES,
@@ -64,10 +62,7 @@ namespace {
     {
         enum type
         {
-            THICKNESS,
-            DEPTH_TEST,
             MESH0,
-            VOXEL,
             MAX
         };
     }
@@ -75,15 +70,6 @@ namespace {
     GLuint VAO[vao::MAX] = {0};
     GLuint Buffer[buffer::MAX] = {0};
     GLuint Program[program::MAX] = {0};
-
-    const GLsizei QuadVertCount = 4;
-    const GLsizei QuadSize = QuadVertCount * sizeof(glm::vec2);
-    const glm::vec2 QuadVerts[QuadVertCount] = {
-        glm::vec2(-1,-1),
-        glm::vec2( 1,-1),
-        glm::vec2( 1, 1),
-        glm::vec2(-1, 1),
-    };
 
     GLuint VertCount = 0;
     GLuint IndexCount = 0;
@@ -108,12 +94,14 @@ namespace {
         float Near;
         float Far;
     } ProjectionData;
-    ogle::ShaderProgram MeshShader;
 
+    ogle::FullscreenQuad Quad;
+    ogle::ShaderProgram FS_Shader;
+
+    ogle::ShaderProgram MeshShader;
 
     ogle::Framebuffer VoxelData;
     ogle::Framebuffer DensityData;
-    ogle::Framebuffer DepthMask;
     ogle::ShaderProgram VoxelShader;
     GLuint BitMask;
 
@@ -228,37 +216,13 @@ void createGLObjects()
     glGenBuffers(::buffer::MAX, Buffer);
 }
 
-void initQuadShader()
-{
-    GLuint vert = ogle::createShader(GL_VERTEX_SHADER, DataDirectory + "quad.vert");
-    GLuint frag = ogle::createShader(GL_FRAGMENT_SHADER, DataDirectory + "quad.frag");
-
-    Program[program::THICKNESS] = glCreateProgram();
-    glAttachShader(Program[program::THICKNESS], vert);
-    glAttachShader(Program[program::THICKNESS], frag);
-    glLinkProgram(Program[program::THICKNESS]);
-    glDeleteShader(vert);
-    glDeleteShader(frag);
-
-    ogle::checkShaderLinkage(Program[program::THICKNESS]);
-}
-
-void initQuadGeometry()
-{
-    glBindVertexArray(VAO[vao::QUAD]);
-    glEnableVertexAttribArray(0); // positions
-
-    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::QUAD]);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, Buffer[buffer::QUAD]);
-    glBufferData(GL_ARRAY_BUFFER, QuadSize, glm::value_ptr(QuadVerts[0]), GL_STATIC_DRAW);
-}
-
 void initFullScreenQuad()
 {
-    initQuadShader();
-    initQuadGeometry();
+    Quad.init();
+    std::map<GLuint, std::string> shaders;
+    shaders[GL_VERTEX_SHADER] = DataDirectory + "quad.vert";
+    shaders[GL_FRAGMENT_SHADER] = DataDirectory + "quad.frag";
+    FS_Shader.init(shaders);
 }
 
 void setDataDir(int argc, char *argv[])
@@ -270,31 +234,6 @@ void setDataDir(int argc, char *argv[])
     std::string exe_dir = path.substr(0, dir_idx);
     std::string exe_name = path.substr(dir_idx);
     DataDirectory = exe_dir + "../data/" + exe_name + "/";
-}
-
-void initWriteToIntTexTest()
-{
-    // creates an int texture
-    // creates fbo with int texture
-    //  int texture 32 wide, 1 tall,
-    // GL_R8UI  GL_RED_INTEGER  ui8
-    DepthMask.Target = GL_TEXTURE_2D;
-    DepthMask.Width = 32;
-    DepthMask.Height = 1;
-    DepthMask.ComponentCount = 1;
-    DepthMask.InternalFormat = GL_R32UI; // !!!!
-    DepthMask.Format = GL_RED_INTEGER;
-    DepthMask.Type = GL_UNSIGNED_INT; // !!!!!
-    DepthMask.TextureNames.resize(1);
-    initFramebuffer(DepthMask);
-
-    // later use
-    //  maybe 128 wide?
-
-    std::map<GLuint, std::string> shaders;
-    shaders[GL_VERTEX_SHADER]   = DataDirectory + "quad.vert";
-    shaders[GL_FRAGMENT_SHADER] = DataDirectory + "depth_mask_test.frag";
-    Program[program::DEPTH_TEST] = ogle::createProgram( shaders );
 }
 
 BoundingBox get_bounding_box(const std::vector<glm::vec3>& positions)
@@ -314,19 +253,10 @@ BoundingBox get_bounding_box(const std::vector<glm::vec3>& positions)
 
 void initMeshShaders()
 {
-    GLuint vert = ogle::createShader(GL_VERTEX_SHADER, DataDirectory + "mesh.vert");
-    GLuint frag = ogle::createShader(GL_FRAGMENT_SHADER, DataDirectory + "mesh.frag");
-
-    Program[program::MESH0] = glCreateProgram();
-    glAttachShader(Program[program::MESH0], vert);
-    glAttachShader(Program[program::MESH0], frag);
-    glLinkProgram(Program[program::MESH0]);
-    glDeleteShader(vert);
-    glDeleteShader(frag);
-
-    ogle::checkShaderLinkage(Program[program::MESH0]);
-    MeshShader.ProgramName = Program[program::MESH0];
-    MeshShader.collectUniforms();
+    std::map<GLuint, std::string> shaders;
+    shaders[GL_VERTEX_SHADER] = DataDirectory + "mesh.vert";
+    shaders[GL_FRAGMENT_SHADER] = DataDirectory + "mesh.frag";
+    MeshShader.init(shaders);
 }
 
 void initMesh()
@@ -380,21 +310,10 @@ void initMesh()
 
 void initVoxelShader()
 {
-    GLuint vert = ogle::createShader(GL_VERTEX_SHADER, DataDirectory + "voxel.vert");
-    GLuint frag = ogle::createShader(GL_FRAGMENT_SHADER, DataDirectory + "voxel.frag");
-
-    VoxelShader.ProgramName = glCreateProgram();
-    glAttachShader(VoxelShader.ProgramName, vert);
-    glAttachShader(VoxelShader.ProgramName, frag);
-    glLinkProgram(VoxelShader.ProgramName);
-    glDeleteShader(vert);
-    glDeleteShader(frag);
-
-    ogle::checkShaderLinkage(VoxelShader.ProgramName);
-
-    glUseProgram(VoxelShader.ProgramName);
-    VoxelShader.collectUniforms();
-    glUseProgram(0);
+    std::map<GLuint, std::string> shaders;
+    shaders[GL_VERTEX_SHADER] = DataDirectory + "voxel.vert";
+    shaders[GL_FRAGMENT_SHADER] = DataDirectory + "voxel.frag";
+    VoxelShader.init(shaders);
 }
 
 void initBitMaskTexture()
@@ -512,8 +431,6 @@ void init( int argc, char *argv[])
         ProjectionData.Near,
         ProjectionData.Far
         );
-
-    initWriteToIntTexTest();
 }
 
 glm::mat4 center_scene_in_camera()
@@ -552,15 +469,15 @@ void render_mesh_to_screen()
 void render_fullscreen_quad()
 {
     glEnable(GL_BLEND);
-    glUseProgram(Program[program::THICKNESS]);
+
+    FS_Shader.bind();
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, VoxelData.TextureNames[0]);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, VoxelData.TextureNames[1]);
 
-    glBindVertexArray(VAO[vao::QUAD]);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, QuadVertCount);
+    Quad.render();
 }
 
 void render_to_screen()
@@ -648,6 +565,11 @@ void shutdown()
     for (const auto& p : Program)
         glDeleteProgram(p);
 
+    Quad.shutdown();
+    FS_Shader.shutdown();
+    MeshShader.shutdown();
+    VoxelShader.shutdown();
+
     glDeleteBuffers(::buffer::MAX, Buffer);
     glDeleteVertexArrays(::vao::MAX, VAO);
 
@@ -662,7 +584,6 @@ void run_tests()
 {
     ogle::Test_Integer_Texture TestInt;
     TestInt.init(DataDirectory);
-
     TestInt.check_int_textur_bound();
     TestInt.read_back_texture();
     TestInt.write_read_to_fbo();
@@ -677,9 +598,7 @@ void run_tests()
 int main( int argc, char *argv[])
 {
     init(argc, argv);
-
-    run_tests();
-
+    // run_tests();
     runloop();
     shutdown();
     exit( EXIT_SUCCESS );

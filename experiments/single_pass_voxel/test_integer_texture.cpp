@@ -72,8 +72,7 @@ void Test_Integer_Texture::init(const std::string& dataDirectory)
         std::map<GLuint, std::string> shaders;
         shaders[GL_VERTEX_SHADER] = dataDirectory + "int_texture_test.vert";
         shaders[GL_FRAGMENT_SHADER] = dataDirectory + "int_texture_test.frag";
-        Program.ProgramName = createProgram(shaders);
-        Program.collectUniforms();
+        Program.init(shaders);
     }
     glFinish();
 }
@@ -117,7 +116,7 @@ void Test_Integer_Texture::write_read_to_fbo()
         GLuint clear_color[4] = {0,0,0,0};
         glClearBufferuiv(GL_COLOR, 0, clear_color);
 
-        glUseProgram(Program.ProgramName);
+        Program.bind();
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(TextureInfo.target, TextureName);

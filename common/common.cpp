@@ -29,7 +29,29 @@ namespace ogle {
         shutdown();
     }
 
-    void ShaderProgram::bind(){
+    void ShaderProgram::init( const std::map<GLuint, std::string>& shaders )
+    {
+        std::vector<GLuint> shader_list;
+        for (const auto& kv: shaders)
+            shader_list.push_back( createShader( kv.first, kv.second ) );
+
+        ProgramName = glCreateProgram();
+        for (const auto& shader : shader_list)
+            glAttachShader(ProgramName, shader);
+
+        glLinkProgram(ProgramName);
+
+        for (const auto& shader : shader_list)
+            glDeleteShader(shader);
+
+        checkShaderLinkage(ProgramName);
+        glUseProgram(ProgramName);
+        collectUniforms();
+        glUseProgram(0);
+    }
+
+    void ShaderProgram::bind()
+    {
         if (0 == ProgramName){
             std::string msg = "Tried using shader program object that was not valid. ";
             msg += __FILE__;
@@ -40,7 +62,8 @@ namespace ogle {
         glUseProgram(ProgramName);
     }
 
-    void ShaderProgram::collectUniforms(){
+    void ShaderProgram::collectUniforms()
+    {
         // older way of doing things,
         // upgrade to using uniform buffers...
         int active_uniforms = 0;
@@ -60,10 +83,67 @@ namespace ogle {
         }
     }
 
-    void ShaderProgram::shutdown(){
+    void ShaderProgram::shutdown()
+    {
         // the ProgramName is stored in an array and is managed by someone else
         // some sort of communication needs to be set up to notify each other for shutdowns.
         ProgramName = 0;
+    }
+
+    GLuint ShaderProgram::createShader(GLenum type, const std::string& filename)
+    {
+        GLuint shader = glCreateShader(type);
+
+        // load up the file
+        std::ifstream inf(filename);
+        if (!inf.is_open()) {
+            std::cerr << "Failed to open " << filename << std::endl;
+            assert(0);
+        }
+
+        std::string source;
+        inf.seekg(0, std::ios::end);
+        source.resize(inf.tellg());
+        inf.seekg(0, std::ios::beg);
+        inf.read(&source[0], source.size());
+        inf.close();
+
+        const char *c_str = source.c_str();
+        glShaderSource(shader, 1, &c_str, NULL);
+        glCompileShader(shader);
+
+        int status;
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+        if (status == GL_FALSE)
+        {
+            const int maxLen = 1000;
+            int len;
+            char errorBuffer[maxLen]{0};
+            glGetShaderInfoLog(shader, maxLen, &len, errorBuffer);
+            std::cerr   << "Shader: " << "\n\t"
+                        << filename << "\n"
+                        << "Failed to compile with errors:\n\t"
+                        << errorBuffer << std::endl;
+            assert(0);
+        }
+
+        return shader;
+    }
+
+    void ShaderProgram::checkShaderLinkage( const GLuint& program)
+    {
+        int status;
+        glGetProgramiv(program, GL_LINK_STATUS, &status);
+        if (status == GL_FALSE)
+        {
+            const int maxLen = 1000;
+            int len;
+            char errorBuffer[maxLen]{0};
+            glGetProgramInfoLog(program, maxLen, &len, errorBuffer);
+            std::cerr   << "Shader Linked with erros:\n"
+                        << errorBuffer << std::endl;
+            assert(0);
+        }
     }
 
     FullscreenQuad::FullscreenQuad()
@@ -137,12 +217,6 @@ namespace ogle {
             type,
             data
         );
-
-        if (internalFormat == GL_RGBA32UI){
-            GLboolean b;
-            glGetBooleanv(GL_RGBA_INTEGER_MODE_EXT, &b);
-            std::cout << "Textures are bool: " << std::boolalpha << (b == GL_TRUE) << std::endl;
-        }
 
         if (glGetError() != GL_NONE) assert(0);
 
@@ -237,81 +311,6 @@ namespace ogle {
             std::cout << std::endl;
             assert(0);
         }
-    }
-
-    void checkShaderLinkage( const GLuint& program)
-    {
-        int status;
-        glGetProgramiv(program, GL_LINK_STATUS, &status);
-        if (status == GL_FALSE)
-        {
-            const int maxLen = 1000;
-            int len;
-            char errorBuffer[maxLen]{0};
-            glGetProgramInfoLog(program, maxLen, &len, errorBuffer);
-            std::cerr   << "Shader Linked with erros:\n"
-                        << errorBuffer << std::endl;
-            assert(0);
-        }
-    }
-
-    GLuint createShader(GLenum type, const std::string& filename)
-    {
-        GLuint shader = glCreateShader(type);
-
-        // load up the file
-        std::ifstream inf(filename);
-        if (!inf.is_open()) {
-            std::cerr << "Failed to open " << filename << std::endl;
-            assert(0);
-        }
-
-        std::string source;
-        inf.seekg(0, std::ios::end);
-        source.resize(inf.tellg());
-        inf.seekg(0, std::ios::beg);
-        inf.read(&source[0], source.size());
-        inf.close();
-
-        const char *c_str = source.c_str();
-        glShaderSource(shader, 1, &c_str, NULL);
-        glCompileShader(shader);
-
-        int status;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-        if (status == GL_FALSE)
-        {
-            const int maxLen = 1000;
-            int len;
-            char errorBuffer[maxLen]{0};
-            glGetShaderInfoLog(shader, maxLen, &len, errorBuffer);
-            std::cerr   << "Shader: " << "\n\t"
-                        << filename << "\n"
-                        << "Failed to compile with errors:\n\t"
-                        << errorBuffer << std::endl;
-            assert(0);
-        }
-
-        return shader;
-    }
-
-    GLuint createProgram( const std::map<GLuint, std::string>& shaders )
-    {
-        std::vector<GLuint> shader_list;
-        for (const auto& kv: shaders)
-            shader_list.push_back( createShader( kv.first, kv.second ) );
-
-        GLuint program = glCreateProgram();
-        for (const auto& shader : shader_list)
-            glAttachShader(program, shader);
-
-        glLinkProgram(program);
-
-        for (const auto& shader : shader_list)
-            glDeleteShader(shader);
-
-        checkShaderLinkage(program);
-        return program;
     }
 
     GLFWwindow*   initGLFW(

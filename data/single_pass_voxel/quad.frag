@@ -25,5 +25,6 @@ void main() {
     else
         color = vec4(1,0,1,1);
 
+    //color = vec4( float(abs(sum))/128. );
     Frag = color;
 }
