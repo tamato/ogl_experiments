@@ -1,15 +1,16 @@
 #version 430
 
 layout(binding=0)  uniform usampler1D BitMask;
-layout(location=1) uniform vec2 DepthExtents = vec2(1000.0,10000.0);
+layout(location=1) uniform vec2 DepthExtents = vec2(0.1,10.0);
 
 layout(location=0) out uvec4 FragOut0;
 layout(location=1) out uvec4 FragOut1;
 
 void main() {
-    float coord = gl_FragCoord.z*.5+.5;
+    //float coord = gl_FragCoord.z*.5+.5;
+    float coord = clamp(gl_FragCoord.z, 0, 1);
     float range = DepthExtents.y - DepthExtents.x;
-    coord = ((1./gl_FragCoord.w) - DepthExtents.x) / range;
+    //coord = ((1./gl_FragCoord.w) - DepthExtents.x) / range;
 
     float half_range = range * .5;
     float depth = (1./gl_FragCoord.w) - DepthExtents.x;
@@ -24,6 +25,11 @@ void main() {
         FragOut1 = mask;
     }
 
-    FragOut0 = uvec4(0x1);
+    /*
+    if (gl_FrontFacing)
+        FragOut0 = uvec4(0xFF, 0, 0, 0);
+    else
+        FragOut0 = uvec4(0xFFFF, 0, 0, 0);
+        */
     FragOut1 = uvec4(0xFFFFFFFF);
 }

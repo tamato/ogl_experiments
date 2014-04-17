@@ -13,8 +13,13 @@ void main() {
     uint sum = count.x+count.y+count.z+count.w;
 
     vec4 color = vec4(0);
-    if (sum == 1) color = vec4(1);
+    uint test_num = bitCount(0xFF00);
+    if (sum == test_num) color = vec4(1);
+    else if (sum == 0) color = vec4(0);
+    else if (sum == test_num-1) color = vec4(1,1,0,1);
+    else if (sum > test_num) color = vec4(1, 0, 0, 1);
+    else if (sum < test_num) color = vec4(0, 1, 0, 1);
 
-    //color = vec4( float(abs(sum))/128. );
+    color = vec4( float(sum)/128. );
     Frag = color;
 }

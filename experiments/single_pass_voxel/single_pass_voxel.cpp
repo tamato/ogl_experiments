@@ -34,8 +34,8 @@ using namespace std;
 namespace {
     std::string DataDirectory; // ends with a forward slash
     GLFWwindow *glfwWindow;
-    int WindowWidth = 800;
-    int WindowHeight = 640;
+    int WindowWidth = 1;
+    int WindowHeight = 1;
     std::string WindowTitle = "SinglePass Voxelization";
 
     namespace vao
@@ -263,7 +263,7 @@ void initMesh()
 {
     // load up mesh
     ogle::ObjLoader loader;
-    loader.load(DataDirectory + "venus.obj");
+    loader.load(DataDirectory + "sphere.obj");
     VertCount = (GLuint)loader.getVertCount();
     size_t position_attribute_size = loader.getPositionAttributeSize();
     size_t position_bytes = VertCount * position_attribute_size;
@@ -423,8 +423,8 @@ void init( int argc, char *argv[])
     initVoxel();
     SceneTransform = glm::mat4(1.0f);
     ProjectionData.Fov = 1.0f;
-    ProjectionData.Near = 1000.0f;
-    ProjectionData.Far = 10000.0f;
+    ProjectionData.Near = .1f;
+    ProjectionData.Far = 10.0f;
     Projection = glm::perspective(
         ProjectionData.Fov,
         float(WindowWidth)/float(WindowHeight),
@@ -489,15 +489,53 @@ void render_to_screen()
 
     // render_mesh_to_screen();
     render_fullscreen_quad();
+
+    // put the positions into the world, find the min/man z
+    float min_z = 9e23f;
+    float max_z = -9e23f;
+    float max_w = 9e23f;
+    for (const auto& p: Positions){
+        glm::vec4 pt = MVP * glm::vec4(p, 1.f);
+        min_z = std::min(pt.z/pt.w, min_z);
+        max_z = std::max(pt.z/pt.w, max_z);
+        max_w = std::min(pt.w, max_w);
+    }
+
+    std::cout << "Min: " << min_z << " Max: " << max_z << std::endl;
+    std::cout << " W: " << max_w << std::endl;
+    float depth_range = ProjectionData.Far - ProjectionData.Near;
+
+    //unsigned int size = Framebuffer.Width * Framebuffer.Height * Framebuffer.ComponentCount;
+    //unsigned int *data = new unsigned int[size];
+
+    // get the mask values
+    {
+        glBindTexture(GL_TEXTURE_1D, BitMask);
+        GLuint componentCount = 4;
+        GLuint rows = 128;
+        GLuint stride = sizeof(GLuint) * componentCount;
+        GLuint column_length = stride * 8;
+        GLuint size = stride * rows;
+        GLuint *data = new GLuint[size];
+        glGetTexImage(GL_TEXTURE_1D, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, (GLvoid*)data );
+
+        GLuint min_idx = GLuint(min_z * float(rows));
+        GLuint max_idx = GLuint(max_z * float(rows));
+        std::cout << "Min idx: " << min_idx << " Max idx: " << max_idx << std::endl;
+
+        glBindTexture(GL_TEXTURE_1D, 0);
+        delete [] data;
+    }
+
 }
 
 void render_mesh_to_voxel()
 {
     // render state
     {
-        // glDisable(GL_DEPTH_TEST);
-        // glDisable(GL_CULL_FACE);
-        // glEnable(GL_DEPTH_CLAMP);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_CLAMP);
         glEnable(GL_COLOR_LOGIC_OP);    // disables all color blending
         glLogicOp(GL_XOR);
     }
@@ -542,7 +580,7 @@ void render()
 
 void update(double time_passed)
 {
-    glm::mat4 y_rot = glm::rotate(SceneTransform, 0.0f/*float(time_passed)*/, glm::vec3(0,1,0));
+    glm::mat4 y_rot = glm::rotate(SceneTransform, /*0.0f*/float(time_passed), glm::vec3(0,1,0));
     View = center_scene_in_camera();
     MV = View * y_rot;
     MVP =  Projection * MV;
