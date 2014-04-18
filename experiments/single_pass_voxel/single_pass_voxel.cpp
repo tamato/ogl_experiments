@@ -367,6 +367,7 @@ void initBitMaskTexture()
            alpha_mask = depth_mask << (127 - i);
            // alpha_mask   &=  ~(1<<31);
         }
+        std::cout << std::hex << &(data[i*stride + R]) << " " << std::endl;
 
         data[i*stride + R] = red_mask;
         data[i*stride + G] = green_mask;
@@ -377,6 +378,16 @@ void initBitMaskTexture()
         gdata[i*stride + G] = green_mask;
         gdata[i*stride + B] = blue_mask;
         gdata[i*stride + A] = alpha_mask;
+
+        data[i*stride + R] = depth_mask;
+        data[i*stride + G] = depth_mask;
+        data[i*stride + B] = depth_mask;
+        data[i*stride + A] = depth_mask;
+
+        gdata[i*stride + R] = depth_mask;
+        gdata[i*stride + G] = depth_mask;
+        gdata[i*stride + B] = depth_mask;
+        gdata[i*stride + A] = depth_mask;
 
         // cout << "I: " << i << "\t"
         //      << "R:" << bitset<32>(red_mask) << " "
@@ -475,12 +486,12 @@ void test_texture()
         any_false |= !(gdata[i*stride + A] == data[i*stride + A]);
         if (any_false){
             any_false = false;
-            std::cout   << "I: " << i
-                        << "\ngdataR: " << gdata[i*stride + R] << "\tdataR: " << data[i*stride + R]
-                        << "\ngdataG: " << gdata[i*stride + G] << "\tdataG: " << data[i*stride + G]
-                        << "\ngdataB " << gdata[i*stride + B] << "\tdataB: " << data[i*stride + B]
-                        << "\ngdataA: " << gdata[i*stride + A] << "\tdataA: " << data[i*stride + A]
-                        << std::endl;
+            // std::cout   << "I: " << i
+            //             << "\ngdataR: " << gdata[i*stride + R] << "\tdataR: " << data[i*stride + R]
+            //             << "\ngdataG: " << gdata[i*stride + G] << "\tdataG: " << data[i*stride + G]
+            //             << "\ngdataB " << gdata[i*stride + B] << "\tdataB: " << data[i*stride + B]
+            //             << "\ngdataA: " << gdata[i*stride + A] << "\tdataA: " << data[i*stride + A]
+            //             << std::endl;
         }
     }
     delete [] data;
@@ -544,11 +555,7 @@ void init( int argc, char *argv[])
     unsigned int size = TestTexFBO.Width * TestTexFBO.Height * stride;
     unsigned int *data = new unsigned int[size];
     glBindTexture(TestTexFBO.Target, TestTexFBO.TextureNames[0]);
-    glGetTexImage(TestTexFBO.Target, 0,
-        TestTexFBO.Format,
-        TestTexFBO.Type,
-        (GLvoid*)data
-        );
+    glGetTexImage(TestTexFBO.Target, 0, TestTexFBO.Format, TestTexFBO.Type, (GLvoid*)data );
 
     GLuint R = 0;
     GLuint G = sizeof(GLuint) + R;
@@ -556,15 +563,16 @@ void init( int argc, char *argv[])
     GLuint A = sizeof(GLuint) + B;
     for (GLuint i=0; i<TestTexFBO.Width; ++i)
     {
-        cout << "I: " << i << "\t"
-             << "R:" << bitset<32>(data[i*stride+R]) << " "
-             << "G:" << bitset<32>(data[i*stride+G]) << " "
-             << "B:" << bitset<32>(data[i*stride+B]) << " "
-             << "A:" << bitset<32>(data[i*stride+A])
-             << endl;
+        // cout << "I: " << i << "\t"
+        //      << "R:" << bitset<32>(data[i+R]) << " "
+        //      << "G:" << bitset<32>(data[i+G]) << " "
+        //      << "B:" << bitset<32>(data[i+B]) << " "
+        //      << "A:" << bitset<32>(data[i+A]) << " "
+        //      << "indx: " << i*stride+A << " " << data[i*stride+A]
+        //      << endl;
     }
     delete [] data;
-    test_texture();
+    // test_texture();
     exit(1);
 }
 
