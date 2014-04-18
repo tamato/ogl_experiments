@@ -105,6 +105,10 @@ namespace {
     ogle::ShaderProgram VoxelShader;
     GLuint BitMask;
 
+    ogle::Framebuffer TestTexFBO;
+    ogle::ShaderProgram TestTexShader;
+
+
     /*
     struct Renderable
     {
@@ -316,18 +320,20 @@ void initVoxelShader()
     VoxelShader.init(shaders);
 }
 
+GLuint *gdata=NULL;
+
 void initBitMaskTexture()
 {
     glGenTextures(1, &BitMask);
-    glBindTexture(GL_TEXTURE_1D, BitMask);
+    glBindTexture(GL_TEXTURE_2D, BitMask);
 
     // make the 1D texture mask
     GLuint componentCount = 4;
-    GLuint rows = 128;
     GLuint stride = sizeof(GLuint) * componentCount;
-    GLuint column_length = stride * 8;
-    GLuint size = stride * rows;
+    GLuint width = 128;
+    GLuint size = stride * width;
     GLuint *data = new GLuint[size];
+    gdata = new GLuint[size];
     const GLuint R = 0;
     const GLuint G = sizeof(GLuint)+R;
     const GLuint B = sizeof(GLuint)+G;
@@ -337,39 +343,58 @@ void initBitMaskTexture()
     GLuint green_mask = 0;
     GLuint blue_mask = 0;
     GLuint alpha_mask = 0;
-    for (GLuint i=0; i<column_length; ++i)
+
+    cout << "sizeof(gluint) " << sizeof(GLuint) << std::endl;
+
+    for (GLuint i=0; i<width; ++i)
     {
-        if (i < 31){
+        if (i<32){
             red_mask   = depth_mask << (31 - i);
+            green_mask = depth_mask << (31 - i);
+            blue_mask = depth_mask << (31 - i);
+            alpha_mask = depth_mask << (31 - i);
+            // red_mask   &=  ~(1<<31);
         }
-        else if (i>32 && i<63){
+        else if (i<64){
             green_mask = depth_mask << (63 - i);
+            // green_mask   &=  ~(1<<31);
         }
-        else if (i>64 && i<95){
+        else if (i<96){
             blue_mask  = depth_mask << (95 - i);
+            // blue_mask   &=  ~(1<<31);
         }
-        else if (i>96 && i<127){
+        else if (i<128){
            alpha_mask = depth_mask << (127 - i);
+           // alpha_mask   &=  ~(1<<31);
         }
 
         data[i*stride + R] = red_mask;
         data[i*stride + G] = green_mask;
         data[i*stride + B] = blue_mask;
         data[i*stride + A] = alpha_mask;
-        // cout << bitset<32>(red_mask)
-        //      << bitset<32>(green_mask)
-        //      << bitset<32>(blue_mask)
-        //      << bitset<32>(alpha_mask)
+
+        gdata[i*stride + R] = red_mask;
+        gdata[i*stride + G] = green_mask;
+        gdata[i*stride + B] = blue_mask;
+        gdata[i*stride + A] = alpha_mask;
+
+        // cout << "I: " << i << "\t"
+        //      << "R:" << bitset<32>(red_mask) << " "
+        //      << "G:" << bitset<32>(green_mask) << " "
+        //      << "B:" << bitset<32>(blue_mask) << " "
+        //      << "A:" << bitset<32>(alpha_mask)
         //      << endl;
     }
 
-    glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexImage1D(
-        GL_TEXTURE_1D, 0,
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    glTexImage2D(
+        GL_TEXTURE_2D, 0,
         GL_RGBA32UI,
-        rows,
+        width,
+        1,
         0,
         GL_RGBA_INTEGER,
         GL_UNSIGNED_INT,
@@ -377,7 +402,8 @@ void initBitMaskTexture()
     );
 
     if (glGetError() != GL_NONE) assert(0);
-    glBindTexture(GL_TEXTURE_1D, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glFinish();
     delete [] data;
 }
 
@@ -407,6 +433,60 @@ void initVoxel()
     initBitMaskTexture();
 }
 
+void test_texture()
+{
+    // GLuint min_idx = GLuint(min_z * float(width));
+    // GLuint max_idx = GLuint(max_z * float(width));
+    // // std::cout << "Min idx: " << min_idx << " Max idx: " << max_idx << std::endl;
+    // GLuint min_mask_0 = data[min_idx*stride+0];
+    // GLuint min_mask_1 = data[min_idx*stride+1];
+    // GLuint min_mask_2 = data[min_idx*stride+2];
+    // GLuint min_mask_3 = data[min_idx*stride+3];
+
+    // GLuint max_mask_0 = data[max_idx*stride+0];
+    // GLuint max_mask_1 = data[max_idx*stride+1];
+    // GLuint max_mask_2 = data[max_idx*stride+2];
+    // GLuint max_mask_3 = data[max_idx*stride+3];
+
+    // GLuint xord_0 = min_mask_0 ^ max_mask_0;
+    // GLuint xord_1 = min_mask_1 ^ max_mask_1;
+    // GLuint xord_2 = min_mask_2 ^ max_mask_2;
+    // GLuint xord_3 = min_mask_3 ^ max_mask_3;
+
+    GLuint componentCount = 4;
+    GLuint stride = sizeof(GLuint) * componentCount;
+    GLuint width = 128;
+    GLuint size = stride * width;
+    GLuint *data = new GLuint[size];
+
+    glBindTexture(GL_TEXTURE_2D, BitMask);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, (GLvoid*)data );
+    glBindTexture(GL_TEXTURE_2D, 0);
+    bool any_false = false;
+    const GLuint R = 0;
+    const GLuint G = sizeof(GLuint)+R;
+    const GLuint B = sizeof(GLuint)+G;
+    const GLuint A = sizeof(GLuint)+B;
+    for (GLuint i=0; i<width; ++i)
+    {
+        any_false |= !(gdata[i*stride + R] == data[i*stride + R]);
+        any_false |= !(gdata[i*stride + G] == data[i*stride + G]);
+        any_false |= !(gdata[i*stride + B] == data[i*stride + B]);
+        any_false |= !(gdata[i*stride + A] == data[i*stride + A]);
+        if (any_false){
+            any_false = false;
+            std::cout   << "I: " << i
+                        << "\ngdataR: " << gdata[i*stride + R] << "\tdataR: " << data[i*stride + R]
+                        << "\ngdataG: " << gdata[i*stride + G] << "\tdataG: " << data[i*stride + G]
+                        << "\ngdataB " << gdata[i*stride + B] << "\tdataB: " << data[i*stride + B]
+                        << "\ngdataA: " << gdata[i*stride + A] << "\tdataA: " << data[i*stride + A]
+                        << std::endl;
+        }
+    }
+    delete [] data;
+    exit(EXIT_FAILURE);
+}
+
 void init( int argc, char *argv[])
 {
     setDataDir(argc, argv);
@@ -431,6 +511,61 @@ void init( int argc, char *argv[])
         ProjectionData.Near,
         ProjectionData.Far
         );
+
+
+    TestTexFBO.InternalFormat = GL_RGBA32UI;
+    TestTexFBO.Target = GL_TEXTURE_2D;
+    TestTexFBO.ComponentCount = 4;
+    TestTexFBO.Width = 128;
+    TestTexFBO.Height = 1;
+    TestTexFBO.Format = GL_RGBA_INTEGER;
+    TestTexFBO.Type = GL_UNSIGNED_INT;
+    TestTexFBO.TextureNames.resize(1);
+    ogle::initFramebuffer(TestTexFBO);
+
+    std::map<GLuint, std::string> shaders;
+    shaders[GL_VERTEX_SHADER] = DataDirectory + "bitmask.vert";
+    shaders[GL_FRAGMENT_SHADER] = DataDirectory + "bitmask.frag";
+    TestTexShader.init(shaders);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, TestTexFBO.FramebufferName);
+    glViewport(0, 0, TestTexFBO.Width, TestTexFBO.Height);
+    glClearColor( 0,0,0,0);
+    glClear( GL_COLOR_BUFFER_BIT );
+
+    TestTexShader.bind();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, BitMask);
+    Quad.render();
+    glFinish();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    GLuint stride = TestTexFBO.ComponentCount * sizeof(GLuint);
+    unsigned int size = TestTexFBO.Width * TestTexFBO.Height * stride;
+    unsigned int *data = new unsigned int[size];
+    glBindTexture(TestTexFBO.Target, TestTexFBO.TextureNames[0]);
+    glGetTexImage(TestTexFBO.Target, 0,
+        TestTexFBO.Format,
+        TestTexFBO.Type,
+        (GLvoid*)data
+        );
+
+    GLuint R = 0;
+    GLuint G = sizeof(GLuint) + R;
+    GLuint B = sizeof(GLuint) + G;
+    GLuint A = sizeof(GLuint) + B;
+    for (GLuint i=0; i<TestTexFBO.Width; ++i)
+    {
+        cout << "I: " << i << "\t"
+             << "R:" << bitset<32>(data[i*stride+R]) << " "
+             << "G:" << bitset<32>(data[i*stride+G]) << " "
+             << "B:" << bitset<32>(data[i*stride+B]) << " "
+             << "A:" << bitset<32>(data[i*stride+A])
+             << endl;
+    }
+    delete [] data;
+    test_texture();
+    exit(1);
 }
 
 glm::mat4 center_scene_in_camera()
@@ -490,6 +625,7 @@ void render_to_screen()
     // render_mesh_to_screen();
     render_fullscreen_quad();
 
+
     // put the positions into the world, find the min/man z
     float min_z = 9e23f;
     float max_z = -9e23f;
@@ -501,45 +637,16 @@ void render_to_screen()
         max_w = std::min(pt.w, max_w);
     }
 
-    std::cout << "Min: " << min_z << " Max: " << max_z << std::endl;
-    std::cout << " W: " << max_w << std::endl;
+    // std::cout << "Min: " << min_z << " Max: " << max_z << std::endl;
+    // std::cout << " W: " << max_w << std::endl;
     float depth_range = ProjectionData.Far - ProjectionData.Near;
 
     //unsigned int size = Framebuffer.Width * Framebuffer.Height * Framebuffer.ComponentCount;
     //unsigned int *data = new unsigned int[size];
-
-    // get the mask values
-    {
-        glBindTexture(GL_TEXTURE_1D, BitMask);
-        GLuint componentCount = 4;
-        GLuint rows = 128;
-        GLuint stride = sizeof(GLuint) * componentCount;
-        GLuint column_length = stride * 8;
-        GLuint size = stride * rows;
-        GLuint *data = new GLuint[size];
-        glGetTexImage(GL_TEXTURE_1D, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, (GLvoid*)data );
-
-        GLuint min_idx = GLuint(min_z * float(rows));
-        GLuint max_idx = GLuint(max_z * float(rows));
-        std::cout << "Min idx: " << min_idx << " Max idx: " << max_idx << std::endl;
-
-        glBindTexture(GL_TEXTURE_1D, 0);
-        delete [] data;
-    }
-
 }
 
 void render_mesh_to_voxel()
 {
-    // render state
-    {
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
-        glEnable(GL_DEPTH_CLAMP);
-        glEnable(GL_COLOR_LOGIC_OP);    // disables all color blending
-        glLogicOp(GL_XOR);
-    }
-
     VoxelShader.bind();
     glUseProgram(VoxelShader.ProgramName);
     glUniformMatrix4fv(VoxelShader.Uniforms["WorldViewProjection"], 1, false, glm::value_ptr(MVP));
@@ -549,6 +656,35 @@ void render_mesh_to_voxel()
 
     glBindVertexArray(VAO[vao::MESH]);
     glDrawRangeElements(GL_TRIANGLES, 0, VertCount, IndexCount, GL_UNSIGNED_INT, 0);
+}
+
+void render_to_voxel()
+{
+    std::cout   << "Fbo0: " << VoxelData.TextureNames[0]
+                << "\n\tFbo1: " << VoxelData.TextureNames[1]
+                << "\n\tBitMask: " << BitMask
+                << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, VoxelData.FramebufferName);
+    glViewport( 0, 0, VoxelData.Width, VoxelData.Height );
+
+    // size_t buffer_count = VoxelData.TextureNames.size();
+    // GLuint color[4] = {0,0,0,0};
+    // for (size_t i=0; i<buffer_count; ++i)
+    //     glClearBufferuiv(GL_COLOR, i, color);
+    glClearColor(1,1,1,1);
+    glClear( GL_COLOR_BUFFER_BIT );
+
+    // render state
+    {
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_CLAMP);
+        glEnable(GL_COLOR_LOGIC_OP);    // disables all color blending
+        glLogicOp(GL_XOR);
+    }
+
+    test_texture();
+    render_mesh_to_voxel();
 
     // disable render state
     {
@@ -556,20 +692,6 @@ void render_mesh_to_voxel()
         glDisable(GL_COLOR_LOGIC_OP);
         glDisable(GL_DEPTH_CLAMP);
     }
-}
-
-void render_to_voxel()
-{
-    glBindFramebuffer(GL_FRAMEBUFFER, VoxelData.FramebufferName);
-    glViewport( 0, 0, VoxelData.Width, VoxelData.Height );
-
-    size_t buffer_count = VoxelData.TextureNames.size();
-    GLuint color[4] = {0,0,0,0};
-    for (size_t i=0; i<buffer_count; ++i){
-        glClearBufferuiv(GL_COLOR, i, color);
-    }
-
-    render_mesh_to_voxel();
 }
 
 void render()
