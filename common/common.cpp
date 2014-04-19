@@ -198,8 +198,7 @@ namespace ogle {
 
         unsigned int size = width * height * componentCount;
         unsigned int *data = new unsigned int[size];
-        for (int i=0; i<size; i+=componentCount)
-            data[i] = 0;
+        memset((void*)data, 0, size*sizeof(unsigned int));
 
         // Nvidia has a bug that if these were intergal textures
         // GL_LINEAR cannot be used and must be GL_NEAREST

@@ -1,6 +1,9 @@
 #!/bin/sh
 
 if [ -n "$1" ]; then
+    # use
+    #   git add --update
+    # to remove deleted files from git's index tree
     git add .
     git commit -m "$1"
     echo TGH!1
