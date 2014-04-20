@@ -104,6 +104,7 @@ namespace {
     ogle::ShaderProgram VoxelShader;
     ogle::Framebuffer DensityData;
     ogle::ShaderProgram DensityShader;
+    ogle::ShaderProgram DensityNormalShader;
     GLuint BitMask;
 
     /*
@@ -394,6 +395,14 @@ void initDensityShader()
     DensityShader.init(shaders);
 }
 
+void initDensityNormalShader()
+{
+    std::map<GLuint, std::string> shaders;
+    shaders[GL_VERTEX_SHADER] = DataDirectory + "quad.vert";
+    shaders[GL_FRAGMENT_SHADER] = DataDirectory + "density_normal.frag";
+    DensityNormalShader.init(shaders);
+}
+
 void initVoxel()
 {
     VoxelData.InternalFormat = GL_RGBA32UI;
@@ -418,6 +427,7 @@ void initVoxel()
 
     initVoxelShader();
     initDensityShader();
+    initDensityNormalShader();
     initBitMaskTexture();
 }
 
@@ -539,15 +549,34 @@ void render_to_voxel()
     }
 }
 
+void render_to_density()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, DensityData.FramebufferName);
+    glViewport( 0, 0, DensityData.Width, DensityData.Height );
+
+    size_t buffer_count = DensityData.TextureNames.size();
+    GLuint color[4] = {0,0,0,0};
+    for (size_t i=0; i<buffer_count; ++i)
+        glClearBufferuiv(GL_COLOR, i, color);
+
+    DensityShader.bind();
+    for (size_t i=0; i<VoxelData.TextureNames.size(); ++i){
+        glActiveTexture(GL_TEXTURE0+i);
+        glBindTexture(GL_TEXTURE_2D, VoxelData.TextureNames[i]);
+    }
+
+    Quad.render();
+}
+
 void render()
 {
-    double before = glfwGetTime();
+    // double before = glfwGetTime();
+    // double after = glfwGetTime();
+    // double diff = after - before;
+    // cout << "CPU Voxelization time: " << diff*1000.0 << " ms" << endl;
+
     render_to_voxel();
-    double after = glfwGetTime();
-    double diff = after - before;
-
-    cout << "CPU Voxelization time: " << diff*1000.0 << " mms" << endl;
-
+    render_to_density();
     render_to_screen();
 }
 

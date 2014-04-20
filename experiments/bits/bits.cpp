@@ -39,14 +39,14 @@ void parallel_sum(unsigned int x0, unsigned int x1, unsigned int r0, unsigned in
     std::bitset<8> pb(x1);
     std::bitset<8> e(even);
     std::bitset<8> o(odd);
-    cout << test_name << boolalpha << " " << (r0 == even) << " " << (r1 == odd) << endl;
-         // << "\n\t" << "a: " << pa << "    " << pa
-         // << "\n\t" << "b: " << pb << "    " << pb
-         // << "\n\t" << "e: " << e  << " o: " << o
-         // << "\n\t" << (r0 == even) << " " << (r1 == odd)
-         // << endl;
-    // std::bitset<32> total(r0+r1);
-    // cout << total << endl;
+    cout << test_name << boolalpha << " " << (r0 == even) << " " << (r1 == odd)
+         << "\n\t" << "a: " << pa << "    " << pa
+         << "\n\t" << "b: " << pb << "    " << pb
+         << "\n\t" << "e: " << e  << " o: " << o
+         << "\n\t" << (r0 == even) << " " << (r1 == odd)
+         << endl;
+    std::bitset<32> total(r0+r1);
+    cout << total << endl;
 }
 
 int main()
