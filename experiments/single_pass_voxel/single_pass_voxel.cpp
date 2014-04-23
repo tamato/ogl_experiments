@@ -587,7 +587,7 @@ void render_to_density()
 
     Quad.render();
 
-    #if 1
+    #if 0
     // for tests, read back both density textures and make sure there bits are in the right place
     {
         // the result
