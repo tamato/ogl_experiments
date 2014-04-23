@@ -97,6 +97,7 @@ namespace {
 
     ogle::FullscreenQuad Quad;
     ogle::ShaderProgram FS_Shader;
+    ogle::ShaderProgram Density_FS_Shader;
 
     ogle::ShaderProgram MeshShader;
 
@@ -225,6 +226,10 @@ void initFullScreenQuad()
     shaders[GL_VERTEX_SHADER] = DataDirectory + "quad.vert";
     shaders[GL_FRAGMENT_SHADER] = DataDirectory + "quad.frag";
     FS_Shader.init(shaders);
+
+    shaders[GL_VERTEX_SHADER] = DataDirectory + "quad.vert";
+    shaders[GL_FRAGMENT_SHADER] = DataDirectory + "blit_density.frag";
+    Density_FS_Shader.init(shaders);
 }
 
 void setDataDir(int argc, char *argv[])
@@ -482,7 +487,7 @@ void render_mesh_to_screen()
     glDrawRangeElements(GL_TRIANGLES, 0, VertCount, IndexCount, GL_UNSIGNED_INT, 0);
 }
 
-void render_fullscreen_quad()
+void render_fs_voxel()
 {
     glEnable(GL_BLEND);
 
@@ -496,6 +501,20 @@ void render_fullscreen_quad()
     Quad.render();
 }
 
+void render_fs_density()
+{
+    glEnable(GL_BLEND);
+
+    Density_FS_Shader.bind();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, DensityData.TextureNames[0]);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, DensityData.TextureNames[1]);
+
+    Quad.render();
+}
+
 void render_to_screen()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -504,7 +523,8 @@ void render_to_screen()
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     // render_mesh_to_screen();
-    render_fullscreen_quad();
+    render_fs_voxel();
+    // render_fs_density();
 }
 
 void render_mesh_to_voxel()
@@ -566,6 +586,59 @@ void render_to_density()
     }
 
     Quad.render();
+
+    #if 0
+    // for tests, read back both density textures and make sure there bits are in the right place
+    {
+        // the result
+        unsigned int size = DensityData.Width * DensityData.Height * DensityData.ComponentCount;
+        unsigned int *data = new unsigned int[size];
+        cout << "Density texture checks: " <<endl;
+        for (size_t i=0; i<DensityData.TextureNames.size(); ++i){
+            glBindTexture(DensityData.Target, DensityData.TextureNames[i]);
+            glGetTexImage(DensityData.Target, 0,
+                DensityData.Format,
+                DensityData.Type,
+                (GLvoid*)data
+                );
+
+            // go through all the entries in data (each component of a texel is an entry)
+            for (size_t j=0; j<size; ++j){
+                // go through all the nibbles of each entry
+                for (size_t k=0; k<8; ++k){
+
+                    // get the nibble
+                    unsigned char test = (data[j] >> 4*k) & (0xF);
+
+                    // mask 0111
+                    static const GLuint check_mask0 = 0x7;
+                    // mask 1000
+                    static const GLuint check_mask1 = 0x8;
+
+                    bool b = false;
+                    bool a = false;
+                    bool too_many_bits_set = false;
+
+                    // check first bit
+                    a = (test & check_mask1);
+                    b = (test & check_mask0);
+                    if (a && b){
+                        too_many_bits_set = true;
+                    }
+
+                    if (too_many_bits_set){
+                        std::cout   << "Failed at index: " << i << " " << j << "\n"
+                                    << "Bits: " << bitset<32>(test)
+                                    << std::endl;
+
+                        exit(EXIT_FAILURE);
+                    }
+                }
+            }
+        }
+        delete [] data;
+    }
+    #endif
 }
 
 void render()
@@ -585,8 +658,8 @@ void update(double time_passed)
     glm::mat4 y_rot = glm::rotate(SceneTransform, /*0.0f*/float(time_passed), glm::vec3(0,1,0));
     View = center_scene_in_camera();
 
-    ProjectionData.Far = -View[3][2]*2.0f;
-    ProjectionData.Near = ProjectionData.Far * .3f;
+    ProjectionData.Far = -View[3][2]*3.f;
+    ProjectionData.Near = ProjectionData.Far * .1f;
     Projection = glm::perspective(
         ProjectionData.Fov,
         float(WindowWidth)/float(WindowHeight),
@@ -615,8 +688,16 @@ void shutdown()
 
     Quad.shutdown();
     FS_Shader.shutdown();
+    Density_FS_Shader.shutdown();
     MeshShader.shutdown();
     VoxelShader.shutdown();
+    DensityShader.shutdown();
+    DensityNormalShader.shutdown();
+
+
+    VoxelData.shutdown();
+    DensityData.shutdown();
+    glDeleteTextures(1, &BitMask);
 
     glDeleteBuffers(::buffer::MAX, Buffer);
     glDeleteVertexArrays(::vao::MAX, VAO);

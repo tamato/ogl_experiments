@@ -31,6 +31,8 @@ namespace ogle
         GLsizei Height;
         GLenum  Format;
         GLenum  Type;
+
+        void shutdown();
     };
 
     struct ShaderProgram

@@ -16,5 +16,5 @@ void main() {
     //uvec4 count1 = bitCount(z_column1);
     uint sum = count0.x+count0.y+count0.z+count0.w;
     //sum += count1.x+count1.y+count1.z+count1.w;
-    Frag = vec4( float(sum)/MaxBitCount );
+    Frag = vec4( float(sum)/(MaxBitCount*2) );
 }

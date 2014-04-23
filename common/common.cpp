@@ -24,6 +24,12 @@ namespace ogle {
 
     }
 
+    void Framebuffer::shutdown()
+    {
+        glDeleteTextures(TextureNames.size(), TextureNames.data());
+        glDeleteFramebuffers(1, &FramebufferName);
+    }
+
     ShaderProgram::ShaderProgram() : ProgramName(0) {}
     ShaderProgram::~ShaderProgram() {
         shutdown();

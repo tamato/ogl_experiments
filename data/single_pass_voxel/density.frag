@@ -36,6 +36,6 @@ void main() {
     odd_sum += (z_pairwise_sum2 & xy_odd_mask) >> 2u;
     odd_sum += (z_pairwise_sum3 & xy_odd_mask) >> 2u;
 
-    FragOut0 = uvec4(odd_sum);
+    FragOut0 = uvec4(odd_sum.rg, even_sum.rg);
     FragOut1 = uvec4(even_sum);
 }
