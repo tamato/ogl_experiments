@@ -70,9 +70,9 @@ void interleave_bit_nibbles(unsigned int even, unsigned int odd, unsigned int r,
 
     z = x | (y << 4);
 
-    cout << test_name
+    cout << test_name << boolalpha << " " <<(z==r)
          << "\n\t" << bitset<32>(z)
-         << "\t" << boolalpha << (z==r)
+         << "\n\t" << hex << z
          << endl;
 }
 
@@ -217,6 +217,20 @@ int main()
         unsigned int b = 0x3892;
         unsigned int r = 0x3A8B9C2D;
         interleave_bit_nibbles(a, b, r, "Test 20 - interleaving nibbles:");
+    }
+
+    {
+        unsigned int a = 0xABCD0000;
+        unsigned int b = 0x38920000;
+        unsigned int r = 0x00000000;
+        interleave_bit_nibbles(a&0xFFFF, b&0xFFFF, r, "Test 21 - interleaving nibbles:");
+    }
+
+    {
+        unsigned int a = 0xABCD0000;
+        unsigned int b = 0x38920000;
+        unsigned int r = 0x3A8B9C2D;
+        interleave_bit_nibbles(a>>16, b>>16, r, "Test 22 - interleaving nibbles:");
     }
 
     return 0;

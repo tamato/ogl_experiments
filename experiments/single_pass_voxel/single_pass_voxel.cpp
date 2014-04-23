@@ -523,8 +523,8 @@ void render_to_screen()
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     // render_mesh_to_screen();
-    render_fs_voxel();
-    // render_fs_density();
+    // render_fs_voxel();
+    render_fs_density();
 }
 
 void render_mesh_to_voxel()
@@ -587,7 +587,7 @@ void render_to_density()
 
     Quad.render();
 
-    #if 0
+    #if 1
     // for tests, read back both density textures and make sure there bits are in the right place
     {
         // the result
