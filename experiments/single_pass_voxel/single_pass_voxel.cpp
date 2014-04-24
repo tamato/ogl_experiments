@@ -107,6 +107,7 @@ namespace {
     ogle::ShaderProgram DensityShader;
     ogle::ShaderProgram DensityNormalShader;
     GLuint BitMask;
+    GLuint DensityBitMask;
 
     /*
     struct Renderable
@@ -408,6 +409,77 @@ void initDensityNormalShader()
     DensityNormalShader.init(shaders);
 }
 
+void initDensityBitMaskTexture()
+{
+    glGenTextures(1, &DensityBitMask);
+    glBindTexture(GL_TEXTURE_2D, DensityBitMask);
+
+    // make the 1D texture mask
+    GLuint stride = 4;
+    GLuint width = 32;
+    GLuint size = stride * width;
+    GLuint *data = new GLuint[size];
+    const GLuint R = 0;
+    const GLuint G = 1;
+    const GLuint B = 2;
+    const GLuint A = 3;
+    const GLuint depth_mask = -1;
+    GLuint red_mask = 0;
+    GLuint green_mask = 0;
+    GLuint blue_mask = 0;
+    GLuint alpha_mask = 0;
+
+    cout << "Size of density bit mask: " << size << endl;
+
+    for (GLuint i=0; i<width; ++i)
+    {
+        auto bit_shift = 32 - (i+1)*4;
+        if (i<8){
+            red_mask   = depth_mask << bit_shift;
+        }
+        else if (i<16){
+            green_mask = depth_mask << bit_shift;
+        }
+        else if (i<24){
+            blue_mask  = depth_mask << bit_shift;
+        }
+        else if (i<32){
+            alpha_mask = depth_mask << bit_shift;
+        }
+
+        data[i*stride + R] = red_mask;
+        data[i*stride + G] = green_mask;
+        data[i*stride + B] = blue_mask;
+        data[i*stride + A] = alpha_mask;
+        cout << "I: " << i << "\t"
+             << "R:" << bitset<32>(red_mask) << " "
+             << "G:" << bitset<32>(green_mask) << " "
+             << "B:" << bitset<32>(blue_mask) << " "
+             << "A:" << bitset<32>(alpha_mask) << " "
+             << endl;
+    }
+
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    glTexImage2D(
+        GL_TEXTURE_2D, 0,
+        GL_RGBA32UI,
+        width,
+        1,
+        0,
+        GL_RGBA_INTEGER,
+        GL_UNSIGNED_INT,
+        data
+    );
+
+    if (glGetError() != GL_NONE) assert(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glFinish();
+    delete [] data;
+}
+
 void initVoxel()
 {
     VoxelData.InternalFormat = GL_RGBA32UI;
@@ -434,6 +506,7 @@ void initVoxel()
     initDensityShader();
     initDensityNormalShader();
     initBitMaskTexture();
+    initDensityBitMaskTexture();
 }
 
 void init( int argc, char *argv[])
