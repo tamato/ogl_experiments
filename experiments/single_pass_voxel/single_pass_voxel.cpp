@@ -352,24 +352,24 @@ void initBitMaskTexture()
             red_mask   = depth_mask << (31 - i);
         }
         else if (i<64){
-            green_mask = depth_mask << (63 - i);
+            green_mask = depth_mask << (31 - i);
         }
         else if (i<96){
-            blue_mask  = depth_mask << (95 - i);
+            blue_mask  = depth_mask << (31 - i);
         }
         else if (i<128){
-           alpha_mask = depth_mask << (127 - i);
+            alpha_mask = depth_mask << (31 - i);
         }
         data[i*stride + R] = red_mask;
         data[i*stride + G] = green_mask;
         data[i*stride + B] = blue_mask;
         data[i*stride + A] = alpha_mask;
-        // cout << "I: " << i << "\t"
-        //      << "R:" << bitset<32>(red_mask) << " "
-        //      << "G:" << bitset<32>(green_mask) << " "
-        //      << "B:" << bitset<32>(blue_mask) << " "
-        //      << "A:" << bitset<32>(alpha_mask)
-        //      << endl;
+        cout << "I: " << i << "\t"
+             << "R:" << bitset<32>(red_mask) << " "
+             << "G:" << bitset<32>(green_mask) << " "
+             << "B:" << bitset<32>(blue_mask) << " "
+             << "A:" << bitset<32>(alpha_mask)
+             << endl;
     }
 
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
@@ -387,10 +387,10 @@ void initBitMaskTexture()
         data
     );
 
-    if (glGetError() != GL_NONE) assert(0);
     glBindTexture(GL_TEXTURE_2D, 0);
     glFinish();
     delete [] data;
+    if (glGetError() != GL_NONE) assert(0);
 }
 
 void initDensityShader()
@@ -451,12 +451,12 @@ void initDensityBitMaskTexture()
         data[i*stride + G] = green_mask;
         data[i*stride + B] = blue_mask;
         data[i*stride + A] = alpha_mask;
-        cout << "I: " << i << "\t"
-             << "R:" << bitset<32>(red_mask) << " "
-             << "G:" << bitset<32>(green_mask) << " "
-             << "B:" << bitset<32>(blue_mask) << " "
-             << "A:" << bitset<32>(alpha_mask) << " "
-             << endl;
+        // cout << "I: " << i << "\t"
+        //      << "R:" << bitset<32>(red_mask) << " "
+        //      << "G:" << bitset<32>(green_mask) << " "
+        //      << "B:" << bitset<32>(blue_mask) << " "
+        //      << "A:" << bitset<32>(alpha_mask) << " "
+        //      << endl;
     }
 
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
@@ -474,10 +474,10 @@ void initDensityBitMaskTexture()
         data
     );
 
-    if (glGetError() != GL_NONE) assert(0);
     glBindTexture(GL_TEXTURE_2D, 0);
     glFinish();
     delete [] data;
+    if (glGetError() != GL_NONE) assert(0);
 }
 
 void initVoxel()
