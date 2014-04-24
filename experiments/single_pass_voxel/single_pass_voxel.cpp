@@ -344,8 +344,6 @@ void initBitMaskTexture()
     GLuint blue_mask = 0;
     GLuint alpha_mask = 0;
 
-    cout << "sizeof(gluint) " << sizeof(GLuint) << std::endl;
-
     for (GLuint i=0; i<width; ++i)
     {
         if (i<32){
@@ -364,12 +362,12 @@ void initBitMaskTexture()
         data[i*stride + G] = green_mask;
         data[i*stride + B] = blue_mask;
         data[i*stride + A] = alpha_mask;
-        cout << "I: " << i << "\t"
-             << "R:" << bitset<32>(red_mask) << " "
-             << "G:" << bitset<32>(green_mask) << " "
-             << "B:" << bitset<32>(blue_mask) << " "
-             << "A:" << bitset<32>(alpha_mask)
-             << endl;
+        // cout << "I: " << i << "\t"
+        //      << "R:" << bitset<32>(red_mask) << " "
+        //      << "G:" << bitset<32>(green_mask) << " "
+        //      << "B:" << bitset<32>(blue_mask) << " "
+        //      << "A:" << bitset<32>(alpha_mask)
+        //      << endl;
     }
 
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
@@ -428,8 +426,6 @@ void initDensityBitMaskTexture()
     GLuint green_mask = 0;
     GLuint blue_mask = 0;
     GLuint alpha_mask = 0;
-
-    cout << "Size of density bit mask: " << size << endl;
 
     for (GLuint i=0; i<width; ++i)
     {
@@ -661,12 +657,14 @@ void render_to_density()
     Quad.render();
 
     #if 0
-    // for tests, read back both density textures and make sure there bits are in the right place
+    // read back both density textures and make sure there bits are in the right range
+    // each 4 bits represent 1 voxel and can be in the range of [0-8]
+    // in other words, make sure no value is greater than 8
     {
-        // the result
         unsigned int size = DensityData.Width * DensityData.Height * DensityData.ComponentCount;
         unsigned int *data = new unsigned int[size];
         cout << "Density texture checks: " <<endl;
+        // go through each of the density textures
         for (size_t i=0; i<DensityData.TextureNames.size(); ++i){
             glBindTexture(DensityData.Target, DensityData.TextureNames[i]);
             glGetTexImage(DensityData.Target, 0,
@@ -677,31 +675,13 @@ void render_to_density()
 
             // go through all the entries in data (each component of a texel is an entry)
             for (size_t j=0; j<size; ++j){
-                // go through all the nibbles of each entry
+                // go through all the nibbles of each entry (the value 8 takes 4 bits and 4 bits is a nibble)
                 for (size_t k=0; k<8; ++k){
-
                     // get the nibble
                     unsigned char test = (data[j] >> 4*k) & (0xF);
-
-                    // mask 0111
-                    static const GLuint check_mask0 = 0x7;
-                    // mask 1000
-                    static const GLuint check_mask1 = 0x8;
-
-                    bool b = false;
-                    bool a = false;
-                    bool too_many_bits_set = false;
-
-                    // check first bit
-                    a = (test & check_mask1);
-                    b = (test & check_mask0);
-                    if (a && b){
-                        too_many_bits_set = true;
-                    }
-
-                    if (too_many_bits_set){
-                        std::cout   << "Failed at index: " << i << " " << j << "\n"
-                                    << "Bits: " << bitset<32>(test)
+                    if (test > 8){
+                        std::cout   << "Failed at DensityTexture: " << i << " index: " << j << "\n"
+                                    << "Bits: " << bitset<8>(test)
                                     << std::endl;
 
                         exit(EXIT_FAILURE);
