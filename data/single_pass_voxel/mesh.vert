@@ -3,9 +3,9 @@
 layout(location=0) in vec4 Position;
 layout(location=1) in vec3 Normal;
 
-uniform mat4 WorldViewProjection;
-uniform mat4 WorldView;
-uniform vec3 LightPos;
+layout(location=0) uniform mat4 WorldViewProjection;
+layout(location=1) uniform mat4 WorldView;
+layout(location=2) uniform vec3 LightPos;
 
 layout(location=0) out vec3 fragNormal;
 layout(location=1) out vec3 fragView;

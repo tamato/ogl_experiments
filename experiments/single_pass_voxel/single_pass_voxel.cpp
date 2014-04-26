@@ -98,16 +98,19 @@ namespace {
     ogle::FullscreenQuad Quad;
     ogle::ShaderProgram FS_Shader;
     ogle::ShaderProgram Density_FS_Shader;
+    ogle::ShaderProgram DensityShader;
+    ogle::ShaderProgram DensityNormalShader;
 
     ogle::ShaderProgram MeshShader;
 
     ogle::Framebuffer VoxelData;
     ogle::ShaderProgram VoxelShader;
+
     ogle::Framebuffer DensityData;
-    ogle::ShaderProgram DensityShader;
-    ogle::ShaderProgram DensityNormalShader;
+
     GLuint BitMask;
     GLuint DensityBitMask;
+    GLuint DensityColumnBitMask;
 
     /*
     struct Renderable
@@ -402,7 +405,7 @@ void initDensityShader()
 void initDensityNormalShader()
 {
     std::map<GLuint, std::string> shaders;
-    shaders[GL_VERTEX_SHADER] = DataDirectory + "quad.vert";
+    shaders[GL_VERTEX_SHADER] = DataDirectory + "mesh.vert";
     shaders[GL_FRAGMENT_SHADER] = DataDirectory + "density_normal.frag";
     DensityNormalShader.init(shaders);
 }
@@ -476,6 +479,86 @@ void initDensityBitMaskTexture()
     if (glGetError() != GL_NONE) assert(0);
 }
 
+void initDensityColBitMaskTexture()
+{
+    glGenTextures(1, &DensityColumnBitMask);
+    glBindTexture(GL_TEXTURE_2D, DensityColumnBitMask);
+
+    // make the 1D texture mask
+    GLuint stride = 4;
+    GLuint width = 32;
+    GLuint size = stride * width;
+    GLuint *data = new GLuint[size];
+    const GLuint R = 0;
+    const GLuint G = 1;
+    const GLuint B = 2;
+    const GLuint A = 3;
+
+    const GLuint masks[8] = {
+        0x0F000000,
+        0xF0F00000,
+        0x0F0F0000,
+        0x00F0F000,
+        0x000F0F00,
+        0x0000F0F0,
+        0x00000F0F,
+        0x000000F0,
+    };
+
+    for (GLuint i=0; i<width; ++i)
+    {
+        GLuint red_mask = 0;
+        GLuint green_mask = 0;
+        GLuint blue_mask = 0;
+        GLuint alpha_mask = 0;
+
+        GLuint mask = masks[i%8];
+        if (i<8){
+            red_mask   = mask;
+        }
+        else if (i<16){
+            green_mask = mask;
+        }
+        else if (i<24){
+            blue_mask  = mask;
+        }
+        else if (i<32){
+            alpha_mask = mask;
+        }
+
+        data[i*stride + R] = red_mask;
+        data[i*stride + G] = green_mask;
+        data[i*stride + B] = blue_mask;
+        data[i*stride + A] = alpha_mask;
+        // cout << "I: " << i << "\t"
+        //      << "R:" << bitset<32>(red_mask) << " "
+        //      << "G:" << bitset<32>(green_mask) << " "
+        //      << "B:" << bitset<32>(blue_mask) << " "
+        //      << "A:" << bitset<32>(alpha_mask) << " "
+        //      << endl;
+    }
+
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    glTexImage2D(
+        GL_TEXTURE_2D, 0,
+        GL_RGBA32UI,
+        width,
+        1,
+        0,
+        GL_RGBA_INTEGER,
+        GL_UNSIGNED_INT,
+        data
+    );
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glFinish();
+    delete [] data;
+    if (glGetError() != GL_NONE) assert(0);
+}
+
 void initVoxel()
 {
     VoxelData.InternalFormat = GL_RGBA32UI;
@@ -503,6 +586,7 @@ void initVoxel()
     initDensityNormalShader();
     initBitMaskTexture();
     initDensityBitMaskTexture();
+    initDensityColBitMaskTexture();
 }
 
 void init( int argc, char *argv[])
@@ -584,6 +668,43 @@ void render_fs_density()
     Quad.render();
 }
 
+void render_mesh_normals_from_density()
+{
+    {
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+    }
+
+    DensityNormalShader.bind();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, DensityData.TextureNames[0]);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, DensityData.TextureNames[1]);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, DensityBitMask);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, DensityColumnBitMask);
+
+    glUniformMatrix4fv(DensityNormalShader.Uniforms["WorldViewProjection"], 1, false, glm::value_ptr(MVP));
+    glUniformMatrix4fv(DensityNormalShader.Uniforms["WorldView"], 1, false, glm::value_ptr(MV));
+    glUniform2f(DensityNormalShader.Uniforms["DepthExtents"], ProjectionData.Near, ProjectionData.Far);
+
+    // add a light to the scene
+    {
+        glm::vec3 light_position = SceneBoundingBox.Extents;
+        glUniform3fv(DensityNormalShader.Uniforms["LightPos"], 1, glm::value_ptr(light_position));
+    }
+
+    glBindVertexArray(VAO[vao::MESH]);
+    glDrawRangeElements(GL_TRIANGLES, 0, VertCount, IndexCount, GL_UNSIGNED_INT, 0);
+
+    {
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+    }
+}
+
 void render_to_screen()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -593,7 +714,8 @@ void render_to_screen()
 
     // render_mesh_to_screen();
     // render_fs_voxel();
-    render_fs_density();
+    // render_fs_density();
+    render_mesh_normals_from_density();
 }
 
 void render_mesh_to_voxel()
