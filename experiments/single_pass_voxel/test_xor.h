@@ -26,7 +26,7 @@ class TestXOR {
         void shutdown();
 
     private:
-        Framebuffer Framebuffer;
+        ogle::Framebuffer Framebuffer;
         GLuint TextureName;
 
         FullscreenQuad Quad;

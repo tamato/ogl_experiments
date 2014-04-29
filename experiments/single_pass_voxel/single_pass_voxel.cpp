@@ -515,14 +515,34 @@ void initDensityColBitMaskTexture()
         GLuint mask = masks[i%8];
         if (i<8){
             red_mask   = mask;
+
+            if (i==7)
+               green_mask = 0xF0000000;
         }
         else if (i<16){
+            red_mask = 0;
+            if (i==8)
+               red_mask = 0xF;
             green_mask = mask;
+
+            if (i==15)
+               blue_mask = 0xF0000000;
         }
         else if (i<24){
+            green_mask = 0;
+            if (i==16)
+               green_mask = 0xF;
+
             blue_mask  = mask;
+
+            if (i==23)
+               alpha_mask = 0xF0000000;
         }
         else if (i<32){
+            blue_mask = 0;
+            if (i==24)
+               blue_mask = 0xF;
+
             alpha_mask = mask;
         }
 
@@ -538,6 +558,7 @@ void initDensityColBitMaskTexture()
         //      << endl;
     }
 
+    // exit(EXIT_SUCCESS);
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
@@ -714,8 +735,8 @@ void render_to_screen()
 
     // render_mesh_to_screen();
     // render_fs_voxel();
-    // render_fs_density();
-    render_mesh_normals_from_density();
+     render_fs_density();
+//    render_mesh_normals_from_density();
 }
 
 void render_mesh_to_voxel()

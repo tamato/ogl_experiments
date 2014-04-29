@@ -9,8 +9,8 @@ set( performance_experiments_VERSION_MINOR 0 )
 
 ############################################
 # set up to use clang
-set(CMAKE_CC_COMPILER "/usr/local/bin/clang")
-set(CMAKE_CXX_COMPILER "/usr/local/bin/clang++")
+#set(CMAKE_CC_COMPILER "/usr/local/bin/clang")
+#set(CMAKE_CXX_COMPILER "/usr/local/bin/clang++")
 
 ############################################
 # Flags for C++11 with g++
