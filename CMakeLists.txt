@@ -7,6 +7,12 @@ project( performance_experiments )
 set( performance_experiments_VERSION_MAJOR 1 )
 set( performance_experiments_VERSION_MINOR 0 )
 
+#if(WIN32)
+#  set( CMAKE_GENERATOR "Visual Studio 11" )
+#  set(CMAKE_CXX_COMPILER "")
+#  set(CMAKE_CC_COMPILER "")
+#endif(WIN32)
+
 ############################################
 # set up to use clang
 #set(CMAKE_CC_COMPILER "/usr/local/bin/clang")
@@ -15,7 +21,7 @@ set( performance_experiments_VERSION_MINOR 0 )
 ############################################
 # Flags for C++11 with g++
 #list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs")
-list( APPEND CMAKE_CXX_FLAGS "-std=c++11")
+list( APPEND CMAKE_CXX_FLAGS "-std=c++11 -static-libstdc++")
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 
@@ -59,10 +65,17 @@ endif(WIN32)
 # Add GLFW3
 # GLFW was built with BUILD_SHARED_LIBS to ON
 set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw)
+#add_subdirectory(${GLFW_DIR})
 include_directories(${GLFW_DIR}/include)
-link_directories(${GLFW_DIR}/src)
+#set(MY_GLFW_LIBRARY glfw ${GLFW_LIBRARIES})
 
-set(GLFW_LIBRARY glfw)
+if(WIN32)
+    link_directories(${GLFW_DIR}/../glfw-build/src)
+    set(GLFW_STATIC_LIBRARIES glfw3)
+else(WIN32)
+    link_directories(${GLFW_DIR}/src)
+    set(GLFW_STATIC_LIBRARIES glfw3)
+endif(WIN32)
 
 ###########################################
 # Add GLM
@@ -73,7 +86,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/glm)
 if(APPLE)
     set(BINARY_FILES ${OPENGL_LIBRARIES})
 else(APPLE)
-    set(BINARY_FILES ${GLFW_LIBRARY} ${GLEW_LIBRARY} ${GL_LIBRARY})
+    set(BINARY_FILES ${GLFW_STATIC_LIBRARIES} ${GLEW_LIBRARY} ${GL_LIBRARY})
 endif(APPLE)
 
 ################################
@@ -92,7 +105,7 @@ function(createExperiment NAME)
     source_group("Inline Files" FILES ${PROJECT_INLINE})
     source_group("Shader Files" FILES ${PROJECT_SHADER})
 
-    add_executable(${NAME} ${COMMON_SOURCE} ${PROJECT_SOURCE} ${PROJECT_INLINE} ${PROJECT_HEADER} ${PROJECT_TEXT})
+    add_executable(${NAME} WIN32 ${COMMON_SOURCE} ${PROJECT_SOURCE} ${PROJECT_INLINE} ${PROJECT_HEADER} ${PROJECT_TEXT})
     # foreach(SHADER_FILE ${PROJECT_SHADER})
     #     add_custom_command(
     #         TARGET ${NAME} POST_BUILD

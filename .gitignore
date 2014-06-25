@@ -13,5 +13,21 @@ CMakeFiles
 Makefile
 cmake_install.cmake
 
-*.sublime-workspace
+# vcxproj files
+*.vcxproj
+*.filters
+*.tlog
+*.user
+*.cbp
+*.txt
+*.sdf
+*.sln
+*.suo
+experiments/*/Release
+experiments/*/Debug
+experiments/*/*.dir
+experiments/*.exe
+external/*
+
+# my own files
 my_cmake

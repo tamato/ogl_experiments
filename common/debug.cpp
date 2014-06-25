@@ -28,7 +28,7 @@ void debugOutput(
     unsigned int severity,
     int length,
     const char* message,
-    const void* userParam)
+    void* userParam)
 {
 
     cout << "OGL Debugger Error: \n"
@@ -123,7 +123,7 @@ void Debug::State::init()
     /** Framebuffer errors */
 
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
-    glDebugMessageCallbackARB(debugOutput, nullptr);
+    glDebugMessageCallbackARB((GLDEBUGPROCARB)debugOutput, nullptr);
 }
 
 Debug::Debug()
