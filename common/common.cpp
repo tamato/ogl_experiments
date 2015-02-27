@@ -109,7 +109,7 @@ namespace ogle {
 
         std::string source;
         inf.seekg(0, std::ios::end);
-        source.resize(inf.tellg());
+        source.resize((unsigned int)inf.tellg());
         inf.seekg(0, std::ios::beg);
         inf.read(&source[0], source.size());
         inf.close();
@@ -124,7 +124,8 @@ namespace ogle {
         {
             const int maxLen = 1000;
             int len;
-            char errorBuffer[maxLen]{0};
+            char errorBuffer[maxLen];
+			memset((void*)errorBuffer, 0, (size_t)maxLen);
             glGetShaderInfoLog(shader, maxLen, &len, errorBuffer);
             std::cerr   << "Shader: " << "\n\t"
                         << filename << "\n"
@@ -143,8 +144,9 @@ namespace ogle {
         if (status == GL_FALSE)
         {
             const int maxLen = 1000;
-            int len;
-            char errorBuffer[maxLen]{0};
+			int len;
+			char errorBuffer[maxLen];
+			memset((void*)errorBuffer, 0, (size_t)maxLen);
             glGetProgramInfoLog(program, maxLen, &len, errorBuffer);
             std::cerr   << "Shader Linked with erros:\n"
                         << errorBuffer << std::endl;
@@ -155,13 +157,11 @@ namespace ogle {
     FullscreenQuad::FullscreenQuad()
         : VertCount(4)
         , ByteCount(VertCount * sizeof(glm::vec2))
-        , Verts({
-            glm::vec2(-1,-1),
-            glm::vec2( 1,-1),
-            glm::vec2( 1, 1),
-            glm::vec2(-1, 1)})
-    {
-
+	{
+		Verts.push_back(glm::vec2(-1,-1));
+		Verts.push_back(glm::vec2( 1,-1));
+		Verts.push_back(glm::vec2( 1, 1));
+		Verts.push_back(glm::vec2(-1, 1));
     }
 
     FullscreenQuad::~FullscreenQuad()

@@ -67,15 +67,10 @@ endif(WIN32)
 set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw)
 #add_subdirectory(${GLFW_DIR})
 include_directories(${GLFW_DIR}/include)
+link_directories(${GLFW_DIR}/lib)
 #set(MY_GLFW_LIBRARY glfw ${GLFW_LIBRARIES})
 
-if(WIN32)
-    link_directories(${GLFW_DIR}/../glfw-build/src)
-    set(GLFW_STATIC_LIBRARIES glfw3)
-else(WIN32)
-    link_directories(${GLFW_DIR}/src)
-    set(GLFW_STATIC_LIBRARIES glfw3)
-endif(WIN32)
+set(GLFW_LIBRARY glfw3)
 
 ###########################################
 # Add GLM

@@ -63,7 +63,7 @@ namespace ogle
 
         const GLsizei VertCount;
         const GLsizei ByteCount;
-        const std::vector<glm::vec2> Verts;
+        std::vector<glm::vec2> Verts;
         GLuint VAO_Name;
         GLuint BufferName;
     };

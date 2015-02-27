@@ -28,6 +28,7 @@ experiments/*/Debug
 experiments/*/*.dir
 experiments/*.exe
 external/*
+win
 
 # my own files
 my_cmake
