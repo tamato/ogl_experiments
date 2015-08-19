@@ -8,7 +8,11 @@ out vec4 FragColor;
 void main(void) {
     vec2 fragUV = gl_FragCoord.xy / textureSize(Texture, 0).xy;
     vec4 color = texture2D( Texture, fragUV );
-    float mag = length(color);
-    FragColor = vec4(abs(color.xyz), 1);
+    bvec3 b = lessThan(color.xyz, vec3(0));
+    if (b.x)
+        color.xyz = vec3(-color.x);
+    if (b.y)
+        color.b = -color.y;
+    FragColor = vec4(color.xyz * 100., 1);
 }
 

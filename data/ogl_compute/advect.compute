@@ -2,10 +2,11 @@
 precision highp float;
 
 layout(local_size_x=32,local_size_y=32) in;
-layout(binding=0, rgba16f) uniform image2D Quantity;
-layout(binding=1, rgba16f) uniform image2D AdvectField;
+coherent layout(binding=0, rgba16f) uniform image2D Quantity;
+coherent layout(binding=1, rgba16f) uniform image2D VelocityField;
 
 uniform float DeltaTime = 1.;
+uniform float Dissipation = 0.9;
 
 vec4 bilinearInterp( ivec2 pos )
 {
@@ -21,7 +22,11 @@ vec4 bilinearInterp( ivec2 pos )
 
 void main(void) {
     ivec2 location = ivec2(gl_GlobalInvocationID);
-    vec2 pos = vec2(location) - DeltaTime * imageLoad(AdvectField, location).xy;
-    vec4 result = bilinearInterp(ivec2(pos));
+    vec2 pos = vec2(location) - imageLoad(VelocityField, location).xy;
+    vec2 dir = imageLoad(VelocityField, location).xy;
+    if (dot( normalize(dir), vec2(-1,0) ) < .8)
+        pos = vec2(location) - vec2(10,1);
+    // vec4 result = Dissipation * bilinearInterp(ivec2(pos)); // when done origianlly, window size == texture size. this is only needed if they are not 1:1
+    vec4 result = Dissipation * imageLoad(Quantity, ivec2(pos));
     imageStore(Quantity, location, result);
 }

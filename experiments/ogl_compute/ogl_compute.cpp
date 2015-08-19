@@ -340,9 +340,11 @@ void computeShaderStats()
     // MAX_COMBINED_COMPUTE_UNIFORM_COMPONENTS;
     // MAX_COMPUTE_WORK_GROUP_INVOCATIONS;
 
-    // // GetIntegeri_v
-    // MAX_COMPUTE_WORK_GROUP_COUNT;
-    // MAX_COMPUTE_WORK_GROUP_SIZE;
+    int v;
+    glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &v);
+    cout << "Max Compute work group size: " << v << endl;
+    glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &v);
+    cout << "Max Compute work group count: " << v << endl;
 
     // // GetProgramiv
     // COMPUTE_WORK_GROUP_SIZE;
@@ -462,7 +464,7 @@ void dispatchSplatInk()
 }
 
 void dispatchAdvect(size_t quantity, size_t advection, float deltaTime)
-{
+{    
     glBindProgramPipeline(Pipeline[pipeline::Advect]);
 
     glProgramUniform1f(Program[program::Advect], DeltaTimeLoc, deltaTime);
@@ -477,6 +479,7 @@ void dispatchAdvect(size_t quantity, size_t advection, float deltaTime)
 
 void dispatchImpulse(int tex)
 {
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glBindProgramPipeline(Pipeline[pipeline::Impulse]);
 
     glm::vec4 impulsePoint = glm::vec4(MousePresses[0], 0, 0);
@@ -491,6 +494,26 @@ void dispatchImpulse(int tex)
     glBindImageTexture(0, Texture[tex], 0, GL_FALSE, 0, GL_READ_WRITE, textureObject::InternalFormat);
     
     glDispatchCompute(textureObject::Width/LocalWorkGroupSize.x,textureObject::Height/LocalWorkGroupSize.y,LocalWorkGroupSize.z);
+
+    glBindProgramPipeline(0);
+}
+
+void dispatchProject(int tex, float alpha, float beta)
+{
+    // glBindProgramPipeline(Pipeline[pipeline::Impulse]);
+
+    // glm::vec4 impulsePoint = glm::vec4(MousePresses[0], 0, 0);
+    // glm::vec4 force = glm::vec4(MousePresses[0], 0, 0) - glm::vec4(MousePresses[1], 0, 0);
+    // force *= 0.1f;
+    // if (glm::length(force) > 0.1f)
+    //     force = glm::normalize(force);
+
+    // glProgramUniform4f(Program[program::Impulse], ImpulsePositionLoc, impulsePoint[0],impulsePoint[1],impulsePoint[2],impulsePoint[3]);
+    // glProgramUniform4f(Program[program::Impulse], ForceLoc, force[0], force[1], force[2], force[3]);
+
+    // glBindImageTexture(0, Texture[tex], 0, GL_FALSE, 0, GL_READ_WRITE, textureObject::InternalFormat);
+    
+    // glDispatchCompute(textureObject::Width/LocalWorkGroupSize.x,textureObject::Height/LocalWorkGroupSize.y,LocalWorkGroupSize.z);
 
     glBindProgramPipeline(0);
 }
@@ -529,15 +552,16 @@ void runloop()
         }
 
         float dt = .1f;
-        dispatchSplatInk();
         static int t0 = texture::Velocity0;
-        static int t1 = texture::Velocity1;
+        static int t1 = texture::Velocity0;
         dispatchAdvect(t0, t1, dt);
         std::swap(t0, t1);
+
+        dispatchSplatInk();
         dispatchAdvect(texture::SplatInk, t1, dt);
         dispatchImpulse(t1);
-        // dispatchProject
-        renderquad(texture::SplatInk);
+        dispatchProject(t1, -1, 4);
+        renderquad(t1);
 
         glfwSwapBuffers(glfwWindow);
     }
