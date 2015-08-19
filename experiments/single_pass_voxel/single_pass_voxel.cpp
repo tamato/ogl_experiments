@@ -274,7 +274,7 @@ void initMesh()
 {
     // load up mesh
     ogle::ObjLoader loader;
-    loader.load(DataDirectory + "bunny.obj");
+    loader.load(DataDirectory + "../geometry/bunny.obj");
     VertCount = (GLuint)loader.getVertCount();
     size_t position_attribute_size = loader.getPositionAttributeSize();
     size_t position_bytes = VertCount * position_attribute_size;

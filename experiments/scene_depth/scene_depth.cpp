@@ -361,7 +361,7 @@ void initMesh()
     ogle::ObjLoader loader;
     // loader.load(DataDirectory + "Anatomy_A.obj");
     // loader.load(DataDirectory + "happy.obj");
-    loader.load(DataDirectory + "sphere.obj");
+    loader.load(DataDirectory + "../geometry/sphere.obj");
     VertCount = (GLuint)loader.getVertCount();
     size_t position_attribute_size = loader.getPositionAttributeSize();
     size_t position_bytes = VertCount * position_attribute_size;

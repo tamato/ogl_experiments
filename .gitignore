@@ -14,6 +14,8 @@ CMakeCache.txt
 CMakeFiles
 Makefile
 cmake_install.cmake
+*.cbp
+CMakeLists.txt.*
 
 *.sublime-workspace
 my_cmake
