@@ -1,3 +1,4 @@
+# project specific items to ignore
 bin
 
 common/CMakeFiles
@@ -17,7 +18,26 @@ cmake_install.cmake
 *.cbp
 CMakeLists.txt.*
 
-*.sublime-workspace
-my_cmake
-CMakeLists.txt.*
+
+# vcxproj files
+*.vcxproj
+*.filters
+*.tlog
+*.user
 *.cbp
+*.txt
+*.sdf
+*.sln
+*.suo
+
+# windows folders
+experiments/*/Release
+experiments/*/Debug
+experiments/*/*.dir
+experiments/*.exe
+external/*
+win
+
+# my own files
+my_cmake
+*.sublime-workspace

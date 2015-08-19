@@ -18,16 +18,17 @@
 
 namespace ogle
 {
-    struct iaFramebuffer
+    struct Framebuffer
     {
-        iaFramebuffer();
+        Framebuffer();
 
-        void init();
+        void attachColor(const std::vector<int>& textureNames);
+        void attachDepth(int textureNames);
+        void attachStencil(int textureNames);
         void checkStatus();
         void bind();
         void unbind();
         void clear();
-
 
         GLuint  FramebufferName;
         GLuint  ComponentCount;

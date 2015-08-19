@@ -6,7 +6,7 @@
 
 using namespace ogle;
 
-iaFramebuffer::iaFramebuffer()
+Framebuffer::Framebuffer()
     : FramebufferName(0)
     , ComponentCount(0)
     , InternalFormat(0)
@@ -21,30 +21,19 @@ iaFramebuffer::iaFramebuffer()
 
 }
 
-void iaFramebuffer::init()
+void Framebuffer::attachColor(const std::vector<int>& textureNames)
 {
-    for (auto& texture : TextureNames) {
-        // texture = initTexture(
-        //     Target,
-        //     InternalFormat,
-        //     ComponentCount,
-        //     Width,
-        //     Height,
-        //     Format,
-        //     Type
-        //     );
-    }
-
     glGenFramebuffers(1, &FramebufferName);
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-    for (size_t i=0; i<TextureNames.size(); ++i)
-        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, Target, TextureNames[i], 0);
+    for (size_t i=0; i<textureNames.size(); ++i)
+        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, Target, textureNames[i], 0);
 
     // check for completeness
     checkStatus();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void iaFramebuffer::checkStatus()
+void Framebuffer::checkStatus()
 {
     GLenum result = glCheckFramebufferStatus( GL_FRAMEBUFFER );
     if (result != GL_FRAMEBUFFER_COMPLETE)

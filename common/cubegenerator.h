@@ -1,6 +1,7 @@
 #ifndef CUBE_GENERATOR_H
 #define CUBE_GENERATOR_H
 
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <vector>
 
