@@ -117,7 +117,7 @@ namespace {
         #undef GL_ENUM_TO_STRING
 
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
-        glDebugMessageCallbackARB(::debugOutput, nullptr);
+        glDebugMessageCallbackARB((GLDEBUGPROCARB)::debugOutput, nullptr);
     }
 }
 
@@ -496,8 +496,8 @@ int main( int argc, char *argv[])
 {
     init(argc, argv);
 
-    runTest("Bound VBO's", runInitBound, runCycleBound);
-    runTest("Bindless VBO's", runInitBindless, runCycleBindless);
+    runTest("Bound VBO's", (run_inits)runInitBound, (run_cycles)runCycleBound);
+    runTest("Bindless VBO's", (run_inits)runInitBindless, (run_cycles)runCycleBindless);
 
     shutdown();
     glfwSetWindowShouldClose(glfwWindow, 1);

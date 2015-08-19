@@ -28,6 +28,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtc/constants.hpp>
 
 #define GLEW_NO_GLU
 #include <GL/glew.h>
@@ -671,7 +672,7 @@ void rendercube()
         static double y=0;
         y += 2.0 * DeltaTime;
 
-        float pi = float(M_PI);
+        float pi = glm::pi<float>();
         float pi2 = 2.0f*pi;
 
         // rotate the push_vec after each iteration to get into all the locations

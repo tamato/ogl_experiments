@@ -109,7 +109,7 @@ namespace ogle {
 
         std::string source;
         inf.seekg(0, std::ios::end);
-        source.resize(inf.tellg());
+        source.resize((unsigned int)inf.tellg());
         inf.seekg(0, std::ios::beg);
         inf.read(&source[0], source.size());
         inf.close();
@@ -124,7 +124,8 @@ namespace ogle {
         {
             const int maxLen = 1000;
             int len;
-            char errorBuffer[maxLen]{0};
+            char errorBuffer[maxLen];
+			memset((void*)errorBuffer, 0, (size_t)maxLen);
             glGetShaderInfoLog(shader, maxLen, &len, errorBuffer);
             std::cerr   << "Shader: " << "\n\t"
                         << filename << "\n"
@@ -143,8 +144,9 @@ namespace ogle {
         if (status == GL_FALSE)
         {
             const int maxLen = 1000;
-            int len;
-            char errorBuffer[maxLen]{0};
+			int len;
+			char errorBuffer[maxLen];
+			memset((void*)errorBuffer, 0, (size_t)maxLen);
             glGetProgramInfoLog(program, maxLen, &len, errorBuffer);
             std::cerr   << "Shader Linked with erros:\n"
                         << errorBuffer << std::endl;
@@ -155,13 +157,11 @@ namespace ogle {
     FullscreenQuad::FullscreenQuad()
         : VertCount(4)
         , ByteCount(VertCount * sizeof(glm::vec2))
-        , Verts({
-            glm::vec2(-1,-1),
-            glm::vec2( 1,-1),
-            glm::vec2( 1, 1),
-            glm::vec2(-1, 1)})
-    {
-
+	{
+		Verts.push_back(glm::vec2(-1,-1));
+		Verts.push_back(glm::vec2( 1,-1));
+		Verts.push_back(glm::vec2( 1, 1));
+		Verts.push_back(glm::vec2(-1, 1));
     }
 
     FullscreenQuad::~FullscreenQuad()
@@ -316,47 +316,6 @@ namespace ogle {
             std::cout << std::endl;
             assert(0);
         }
-    }
-
-    GLFWwindow*   initGLFW(
-        int major_version,
-        int minor_version,
-        bool debug_ctx,
-        int window_width,
-        int window_height,
-        std::string window_name,
-        key_call_back key_callback,
-        error_call_back err_callback )
-    {
-        glfwSetErrorCallback(err_callback);
-
-        /* Init GLFW */
-        if( !glfwInit() )
-            exit( EXIT_FAILURE );
-
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major_version);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor_version);
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-        GLenum debug = debug_ctx ? GL_TRUE : GL_FALSE;
-        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, debug);
-
-        GLFWwindow* window = glfwCreateWindow( window_width, window_height, window_name.c_str(), NULL, NULL );
-        if (!window)
-        {
-            glfwTerminate();
-            exit( EXIT_FAILURE );
-        }
-
-        glfwMakeContextCurrent(window);
-        glfwSwapInterval( 1 );
-
-        glViewport( 0, 0, (GLsizei)window_width, (GLsizei)window_height );
-
-        glfwSetTime( 0.0 );
-        glfwSetKeyCallback(window, key_callback);
-        return window;
     }
 
     void   initGLEW()

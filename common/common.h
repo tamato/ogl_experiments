@@ -63,7 +63,7 @@ namespace ogle
 
         const GLsizei VertCount;
         const GLsizei ByteCount;
-        const std::vector<glm::vec2> Verts;
+        std::vector<glm::vec2> Verts;
         GLuint VAO_Name;
         GLuint BufferName;
     };
@@ -76,14 +76,6 @@ namespace ogle
     // setup
     typedef void (APIENTRY *key_call_back)(GLFWwindow*, int, int, int, int);
     typedef void (APIENTRY *error_call_back)(int, const char*);
-    GLFWwindow*  initGLFW(int major_version,
-                    int minor_version,
-                    bool debug_ctx,
-                    int window_width,
-                    int window_height,
-                    std::string window_name,
-                    key_call_back key_callback,
-                    error_call_back err_callback);
     void   initGLEW();
     void   setDataDir(int argc, char *argv[]);
 }
