@@ -1,0 +1,23 @@
+#version 130
+// The following enables 16b float
+// - lowp 4b float
+// - mediump 8b float
+precision highp float;
+
+uniform sampler2D VelocityField;
+uniform float GridScale;
+uniform float HalfGridScale;
+
+in vec2 fragUV;
+out vec4 FragColor;
+
+void main(void) {
+    ivec2 uv = ivec2(gl_FragCoord.xy);
+    float r = texelFetchOffset( VelocityField, uv, 0, ivec2( 1, 0)).x;
+    float l = texelFetchOffset( VelocityField, uv, 0, ivec2(-1, 0)).x;
+    float t = texelFetchOffset( VelocityField, uv, 0, ivec2( 0, 1)).y;
+    float b = texelFetchOffset( VelocityField, uv, 0, ivec2( 0,-1)).y;
+    vec2 divergence = vec2( (r - l) + (t - b) ) * HalfGridScale;
+    FragColor = vec4(divergence, 0, 0);
+}
+

@@ -1,0 +1,27 @@
+#version 430
+precision highp float;
+
+layout(local_size_x=32,local_size_y=32) in;
+layout(binding=0, rgba16f) uniform image2D Quantity;
+layout(binding=1, rgba16f) uniform image2D AdvectField;
+
+uniform float DeltaTime = 1.;
+
+vec4 bilinearInterp( ivec2 pos )
+{
+    vec4 tl = imageLoad(Quantity, pos + ivec2( 0, 0 ));
+    vec4 tr = imageLoad(Quantity, pos + ivec2( 1, 0 ));
+    vec4 bl = imageLoad(Quantity, pos + ivec2( 0, 1 ));
+    vec4 br = imageLoad(Quantity, pos + ivec2( 1, 1 ));
+
+    vec4 tmp1 = mix( tl, tr, .5 );
+    vec4 tmp2 = mix( bl, br, .5 );
+    return mix(tmp1, tmp2, .5);
+}
+
+void main(void) {
+    ivec2 location = ivec2(gl_GlobalInvocationID);
+    vec2 pos = vec2(location) - DeltaTime * imageLoad(AdvectField, location).xy;
+    vec4 result = bilinearInterp(ivec2(pos));
+    imageStore(Quantity, location, result);
+}

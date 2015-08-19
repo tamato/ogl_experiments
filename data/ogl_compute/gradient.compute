@@ -1,0 +1,27 @@
+#version 130
+// The following enables 16b float
+// - lowp 4b float
+// - mediump 8b float
+precision highp float;
+
+uniform sampler2D DivergentField;
+uniform sampler2D Pressure;
+uniform float GridScale;
+uniform float HalfGridScale;
+
+in vec2 fragUV;
+out vec4 FragColor;
+
+void main(void) {
+    ivec2 uv = ivec2(gl_FragCoord.xy);
+    float r = texelFetchOffset( Pressure, uv, 0, ivec2( 1, 0)).x;
+    float l = texelFetchOffset( Pressure, uv, 0, ivec2(-1, 0)).x;
+    float t = texelFetchOffset( Pressure, uv, 0, ivec2( 0, 1)).x;
+    float b = texelFetchOffset( Pressure, uv, 0, ivec2( 0,-1)).x;
+    vec2 gradient = vec2( (r-l), (t-b) ) * HalfGridScale;
+
+    vec2 newVelocity = texelFetch( DivergentField, uv, 0 ).xy;
+    FragColor = vec4( newVelocity - gradient, 0, 0 );
+}
+
+

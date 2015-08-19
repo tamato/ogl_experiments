@@ -58,8 +58,10 @@ Messing around with bit twiddling for the paper "Single Pass GPU Voxelization" s
 ####scene_depth
 Gets the used depth of the scene in a single draw call.
 ####single_pass_voxel
-Implementing the above paper.
+Implementing the paper "Single-Pass GPU Solid Voxelization for Real-Time Applications".
 ####glsl_derivative
 A test to see if dFdx(position) and dFdy(position) are orthogonal
 ####wire_aa
 Tests wether a proj matrix needs to be transposed for dot product ops, and finds pixel sizes at different depths.
+####ogl_compute
+Demo project to experiment with opengl compute shaders. Renders out a 2D fluid simulation.

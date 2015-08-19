@@ -8,6 +8,8 @@ experiments/*/CMakeFiles
 experiments/*/Makefile
 experiments/*/cmake_install.cmake
 
+external
+
 CMakeCache.txt
 CMakeFiles
 Makefile
@@ -15,3 +17,5 @@ cmake_install.cmake
 
 *.sublime-workspace
 my_cmake
+CMakeLists.txt.*
+*.cbp

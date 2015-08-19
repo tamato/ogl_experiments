@@ -17,6 +17,9 @@ set( performance_experiments_VERSION_MINOR 0 )
 #list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs")
 list( APPEND CMAKE_CXX_FLAGS "-std=c++11")
 
+# staticly link in libstdc++
+set(CMAKE_EXE_LINKER_FLAGS "-static-libstdc++ ${CMAKE_EXE_LINKER_FLAGS}")
+
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 
 message("compiler: " ${CMAKE_CXX_COMPILER})
@@ -29,6 +32,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 # Add common source
 set(COMMON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/common")
 include_directories(${COMMON_DIR})
+
+set(DATA "${CMAKE_CURRENT_SOURCE_DIR}/data")
+include_directories(${DATA})
 
 ################################
 # Add OpenGL
@@ -106,4 +112,3 @@ endfunction(createExperiment)
 ############################################
 # Add in the source that will make a demo
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/experiments)
-

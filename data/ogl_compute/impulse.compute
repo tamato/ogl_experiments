@@ -1,0 +1,21 @@
+#version 430
+precision highp float;
+
+layout(local_size_x=32,local_size_y=32) in;
+layout(binding=0, rgba16f) uniform image2D VelocityField;
+
+uniform vec4 ImpulsePosition = vec4(-999);
+uniform vec4 Force = vec4(0);
+
+void main()
+{
+    ivec2 location = ivec2(gl_GlobalInvocationID);
+    vec4 velocity = imageLoad(VelocityField, location);
+
+    float len = length(vec2(location) - ImpulsePosition.xy);
+    vec4 result = velocity + vec4(Force.xy * exp(-len*.9), 0,0);
+    imageStore(VelocityField, location, result * 0.99);
+}
+
+
+
