@@ -305,7 +305,7 @@ BoundingBox get_bounding_box(const std::vector<glm::vec3>& positions)
 void initMesh()
 {
     ogle::ObjLoader loader;
-    loader.load(DataDirectory + "sphere.obj");
+    loader.load(DataDirectory + "../geometry/sphere.obj");
     VertCount = (GLuint)loader.getVertCount();
     size_t position_attribute_size = loader.getPositionAttributeSize();
     size_t position_bytes = VertCount * position_attribute_size;
