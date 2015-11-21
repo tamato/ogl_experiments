@@ -1,39 +1,71 @@
-#include "Framebuffer.h"
+#include "renderTarget.h"
 #include <cassert>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 
+#define GLEW_NO_GLU
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
 using namespace ogle;
 
-Framebuffer::Framebuffer()
+RenderTarget::RenderTarget()
     : FramebufferName(0)
-    , ComponentCount(0)
-    , InternalFormat(0)
-    , Width(0)
-    , Height(0)
-    , Target(0)
-    , Format(0)
-    , Type(0)
-    , DepthName(0)
-    , StencilName(0)
+    , ClearColor(0)
+    , ClearDepth(0)
+    , ClearStencil(0)
+    , UseClearColor(false)
+    , UseClearDepth(false)
+    , UseClearStencil(false)
+    , NumColorBuffers(0)
 {
 
 }
 
-void Framebuffer::attachColor(const std::vector<int>& textureNames)
+void RenderTarget::init(bool clearColor, bool clearDepth, bool clearStencil)
 {
+    UseClearColor = clearColor;
+    UseClearDepth = clearDepth;
+    UseClearStencil = clearStencil;
     glGenFramebuffers(1, &FramebufferName);
+}
+
+void RenderTarget::attachColor(const std::vector<Texture>& textures)
+{
+    NumColorBuffers = (int)textures.size();
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-    for (size_t i=0; i<textureNames.size(); ++i)
-        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, Target, textureNames[i], 0);
+    for (size_t i=0; i<NumColorBuffers; ++i)
+        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, textures[i].Target, textures[i].Name, 0);
 
     // check for completeness
     checkStatus();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Framebuffer::checkStatus()
+void RenderTarget::attachColor(const Texture& texture)
+{
+    NumColorBuffers = 1;
+    glGenFramebuffers(1, &FramebufferName);
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture.Target, texture.Name, 0);
+
+    // check for completeness
+    checkStatus();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void RenderTarget::attachDepth(const Texture& texture)
+{
+
+}
+
+void RenderTarget::attachStencil(const Texture& texture)
+{
+
+}
+
+void RenderTarget::checkStatus()
 {
     GLenum result = glCheckFramebufferStatus( GL_FRAMEBUFFER );
     if (result != GL_FRAMEBUFFER_COMPLETE)
@@ -87,4 +119,35 @@ void Framebuffer::checkStatus()
         std::cout << std::endl;
         assert(0);
     }
+}
+
+void RenderTarget::bind()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    unsigned int bitmask = 0;
+    if (UseClearColor){
+        // NumColorBuffers
+        // glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+        glClearColor( ClearColor[0], ClearColor[1], ClearColor[2], ClearColor[3] );
+        bitmask |= GL_COLOR_BUFFER_BIT; 
+    }
+
+    if (bitmask != 0)
+        glClear( bitmask );
+}
+
+void RenderTarget::unbind()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void RenderTarget::clear()
+{
+
+}
+
+void RenderTarget::shutdown()
+{
+    glDeleteFramebuffers(1, &FramebufferName);
+    FramebufferName = 0;
 }

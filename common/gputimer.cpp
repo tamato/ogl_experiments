@@ -35,7 +35,6 @@ void gpuTimer::init()
 
 void gpuTimer::start()
 {
-    sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
     activeIdx = queries.size();
     for (size_t i=0; i<queries.size(); ++i) {
         if (queries[i].in_use == false) {
@@ -63,10 +62,12 @@ void gpuTimer::start()
 void gpuTimer::end()
 {
     glQueryCounter(queries[activeIdx].end, GL_TIMESTAMP);
+    sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
     // now wait for all the gpu commands to clear out
-    glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
     glFlush();  // must call this manually when using waitsync
+    glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+    glDeleteSync(sync);
 }
 
 double gpuTimer::elaspedTime()
@@ -84,24 +85,23 @@ double gpuTimer::elaspedTime()
     for (size_t i=0; i<queries.size(); ++i) {
         if (queries[i].in_use == true) {
 
-            glGetQueryObjectiv(queries[i].start, GL_QUERY_RESULT_AVAILABLE, &start_available);
-            glGetQueryObjectiv(queries[i].end,   GL_QUERY_RESULT_AVAILABLE, &end_available);
-
-            if (start_available && end_available) {
-                // See how much time the rendering of object i took in nanoseconds.
-                glGetQueryObjectui64v(queries[i].start, GL_QUERY_RESULT, &timer_start);
-                glGetQueryObjectui64v(queries[i].end,   GL_QUERY_RESULT, &timer_end);
-
-                // getting the difference
-                timer_elapsed = timer_end - timer_start;
-                time = timer_elapsed * 1e-6f; // convert into milliseconds
-
-                // clear values to be used again
-                queries[i].in_use = false;
-
-                // we got a time, don't bother with the rest
-                break;
+            while(end_available){
+                glGetQueryObjectiv(queries[i].end,   GL_QUERY_RESULT_AVAILABLE, &end_available);
             }
+            
+            // See how much time the rendering of object i took in nanoseconds.
+            glGetQueryObjectui64v(queries[i].start, GL_QUERY_RESULT, &timer_start);
+            glGetQueryObjectui64v(queries[i].end,   GL_QUERY_RESULT, &timer_end);
+
+            // getting the difference
+            timer_elapsed = timer_end - timer_start;
+            time = timer_elapsed * 1e-6f; // convert into milliseconds
+
+            // clear values to be used again
+            queries[i].in_use = false;
+
+            // we got a time, don't bother with the rest
+            break;
         }
     }
 
