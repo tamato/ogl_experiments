@@ -1,0 +1,11 @@
+#version 430
+precision highp float;
+
+layout(local_size_x=32,local_size_y=32) in;
+readonly layout(binding=0, rgba16f) uniform image2D In;
+writeonly layout(binding=1) uniform image2D Out;
+
+void main(void) {
+    vec4 data = vec4(1.) - imageLoad(In, ivec2(gl_GlobalInvocationID));
+    imageStore(Out, ivec2(gl_GlobalInvocationID), data);
+}

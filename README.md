@@ -9,13 +9,16 @@
 2. GL_NV_vertex_buffer_unified_memory
 
 ####A video card that supports these extensions
-1. GL_ARB_separate_shader_objects
-2. GL_ARB_timer_query
-3. GL_ARB_debug_output
-4. GL_ARB_draw_indirect
-5. GL_ARB_base_instance
-6. GL_ARB_shader_atomic_counters
-7. GL_ARB_clear_buffer_object
+1.  GL_ARB_separate_shader_objects
+2.  GL_ARB_timer_query
+3.  GL_ARB_debug_output
+4.  GL_ARB_draw_indirect
+5.  GL_ARB_base_instance
+6.  GL_ARB_shader_atomic_counters
+7.  GL_ARB_clear_buffer_object
+8.  GL_ARB_buffer_storage
+9.  GL_ARB_map_buffer_range
+10. GL_ARB_sync
 
 ####Dependencies
 1. GLEW
@@ -58,8 +61,12 @@ Messing around with bit twiddling for the paper "Single Pass GPU Voxelization" s
 ####scene_depth
 Gets the used depth of the scene in a single draw call.
 ####single_pass_voxel
-Implementing the above paper.
+Implementing the paper "Single-Pass GPU Solid Voxelization for Real-Time Applications".
 ####glsl_derivative
 A test to see if dFdx(position) and dFdy(position) are orthogonal
 ####wire_aa
 Tests wether a proj matrix needs to be transposed for dot product ops, and finds pixel sizes at different depths.
+####ogl_compute
+Demo project to experiment with opengl compute shaders. Renders out a 2D fluid simulation.
+####buffer_streaming
+App to compare different buffer streaming techniques.

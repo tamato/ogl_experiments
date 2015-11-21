@@ -320,9 +320,52 @@ namespace ogle {
 
     void   initGLEW()
     {
-
+        glewExperimental=GL_TRUE;
+        GLenum err = glewInit();
+        if (err != GLEW_OK) {
+            /// if it fails here, its becuase there is no current opengl version,
+            /// don't call glewInit() until after a context has been made current.
+            fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+            exit( EXIT_FAILURE );
+        }
+        glGetError(); // GLEW has problems, clear that one that it creates.
     }
+    
+    void initGLFW(const WindowDetails& window)
+    {
+        // /* Init GLFW */
+        // if( !glfwInit() )
+        //     exit( EXIT_FAILURE );
 
+        // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+        // glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+        // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        // glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, debug);
+
+        // // https://www.opengl.org/wiki/Core_And_Compatibility_in_Contexts
+        // // As of opengl 3.2+
+        // // it states:
+        // //      "Recommendation: You should never use the forward compatibility bit. 
+        // //       It had a use for GL 3.0, but once 3.1 removed most of the stuff, it stopped having a use."
+        // // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        
+        // glfwWindow = glfwCreateWindow( window_width, window_height, window_name, NULL, NULL );
+        // if (!glfwWindow)
+        // {
+        //     glfwTerminate();
+        //     exit( EXIT_FAILURE );
+        // }
+
+        // glfwMakeContextCurrent(glfwWindow);
+        // glfwSwapInterval( 0 ); // Turn off vsync for benchmarking.
+        // cout << "[!] Warning, be sure that vsync is disabled in NVidia controller panel." << endl;
+
+        // int width, height;
+        // glfwGetFramebufferSize(glfwWindow, &width, &height);
+        // glViewport( 0, 0, (GLsizei)width, (GLsizei)height );
+        // glfwSetTime( 0.0 );
+    }
+    
     void   setDataDir(int argc, char *argv[])
     {
 

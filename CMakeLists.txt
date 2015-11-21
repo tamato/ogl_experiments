@@ -23,6 +23,9 @@ set( performance_experiments_VERSION_MINOR 0 )
 #list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs")
 list( APPEND CMAKE_CXX_FLAGS "-std=c++11 -static-libstdc++")
 
+# staticly link in libstdc++
+set(CMAKE_EXE_LINKER_FLAGS "-static-libstdc++ ${CMAKE_EXE_LINKER_FLAGS}")
+
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 
 message("compiler: " ${CMAKE_CXX_COMPILER})
@@ -35,6 +38,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 # Add common source
 set(COMMON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/common")
 include_directories(${COMMON_DIR})
+
+set(DATA "${CMAKE_CURRENT_SOURCE_DIR}/data")
+include_directories(${DATA})
 
 ################################
 # Add OpenGL
@@ -62,15 +68,29 @@ else(WIN32)
 endif(WIN32)
 
 ###########################################
-# Add GLFW3
-# GLFW was built with BUILD_SHARED_LIBS to ON
-set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw)
-#add_subdirectory(${GLFW_DIR})
-include_directories(${GLFW_DIR}/include)
-link_directories(${GLFW_DIR}/lib)
-#set(MY_GLFW_LIBRARY glfw ${GLFW_LIBRARIES})
+# Add GLFW3, http://www.glfw.org/docs/latest/build.html
+# Using method: With CMake on Unix and -installed- GLFW binaries
+# to install glfw use: 
+#   make ; sudo make install
+# the install directories are: 
+#   /usr/local/include/GLFW
+#   /usr/local/lib/cmake/glfw
+#   /usr/local/lib/pkgconfig/glfw3.pc
+#   /usr/local/lib/libglfw3.a
+# first make sure we can use the pkg_search_module command
+find_package(PkgConfig REQUIRED)
+pkg_search_module(GLFW REQUIRED glfw3)
+include_directories(${GLFW_INCLUDE_DIRS})
 
-set(GLFW_LIBRARY glfw3)
+# set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw)
+# add_subdirectory(${GLFW_DIR})
+# include_directories(${GLFW_DIR}/include)
+# link_directories(${GLEW_DIR}/src) # glfw does not create lib/, but stores it's lib in src/
+# if(WIN32)
+#     set(GLFW_LIBRARY glfw3dll)
+# else(WIN32)
+#     set(GLFW_LIBRARY libglfw3.so)
+# endif(WIN32)
 
 ###########################################
 # Add GLM
@@ -79,9 +99,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/glm)
 ################################
 # Add libraries to executables
 if(APPLE)
-    set(BINARY_FILES ${OPENGL_LIBRARIES})
+    set(LIBRARY_FILES ${OPENGL_LIBRARIES})
+elseif(WIN32) # not right, need to fix on a windows machine
+    set(LIBRARY_FILES ${GLEW_LIBRARY} ${GL_LIBRARY} ${GLFW_STATIC_LIBRARIES})
 else(APPLE)
-    set(BINARY_FILES ${GLFW_STATIC_LIBRARIES} ${GLEW_LIBRARY} ${GL_LIBRARY})
+    set(LIBRARY_FILES ${GLFW_STATIC_LIBRARIES} ${GLEW_LIBRARY} ${GL_LIBRARY} )
 endif(APPLE)
 
 ################################
@@ -94,24 +116,17 @@ function(createExperiment NAME)
     file(GLOB PROJECT_SOURCE *.cpp)
     file(GLOB PROJECT_INLINE *.inl)
     file(GLOB PROJECT_HEADER *.hpp *.h)
-    file(GLOB PROJECT_SHADER *.vert *.frag *.geom *.cont *.eval *.glsl)
+    file(GLOB PROJECT_SHADER *.vert *.frag *.geom *.cont *.eval *.glsl *.compute)
 
     source_group("Common Files" FILES ${COMMON_DIR})
     source_group("Inline Files" FILES ${PROJECT_INLINE})
     source_group("Shader Files" FILES ${PROJECT_SHADER})
 
     add_executable(${NAME} WIN32 ${COMMON_SOURCE} ${PROJECT_SOURCE} ${PROJECT_INLINE} ${PROJECT_HEADER} ${PROJECT_TEXT})
-    # foreach(SHADER_FILE ${PROJECT_SHADER})
-    #     add_custom_command(
-    #         TARGET ${NAME} POST_BUILD
-    #         COMMAND ${CMAKE_COMMAND} -E copy ${SHADER_FILE} ${DATA_DIR}
-    #     )
-    # endforeach()
 
-    target_link_libraries(${NAME} ${BINARY_FILES})
+    target_link_libraries(${NAME} ${LIBRARY_FILES})
 endfunction(createExperiment)
 
 ############################################
 # Add in the source that will make a demo
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/experiments)
-

@@ -1,3 +1,4 @@
+# project specific items to ignore
 bin
 
 common/CMakeFiles
@@ -8,12 +9,15 @@ experiments/*/CMakeFiles
 experiments/*/Makefile
 experiments/*/cmake_install.cmake
 
+external
+
 CMakeCache.txt
 CMakeFiles
 Makefile
 cmake_install.cmake
 *.cbp
 CMakeLists.txt.*
+
 
 # vcxproj files
 *.vcxproj
@@ -25,6 +29,8 @@ CMakeLists.txt.*
 *.sdf
 *.sln
 *.suo
+
+# windows folders
 experiments/*/Release
 experiments/*/Debug
 experiments/*/*.dir
@@ -34,4 +40,4 @@ win
 
 # my own files
 my_cmake
-ogl_experiments.sublime-workspace
+*.sublime-workspace

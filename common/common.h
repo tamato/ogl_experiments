@@ -68,6 +68,14 @@ namespace ogle
         GLuint BufferName;
     };
 
+    struct WindowDetails
+    {
+        bool Visible;
+        int Width;
+        int Height;
+        std::string Name;
+    };
+
     GLuint initTexture(GLenum target, GLint internalFormat, GLuint componentCount, GLsizei width, GLsizei height, GLenum format, GLenum type);
     // framebuffer releated
     void initFramebuffer(Framebuffer& framebuffer);
@@ -77,6 +85,7 @@ namespace ogle
     typedef void (APIENTRY *key_call_back)(GLFWwindow*, int, int, int, int);
     typedef void (APIENTRY *error_call_back)(int, const char*);
     void   initGLEW();
+    void   initGLFW(const WindowDetails& window);
     void   setDataDir(int argc, char *argv[]);
 }
 

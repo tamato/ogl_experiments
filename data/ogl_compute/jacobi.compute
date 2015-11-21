@@ -1,0 +1,30 @@
+#version 130
+precision highp float;
+
+uniform sampler2D X;
+uniform sampler2D B;
+
+uniform float Alpha;
+uniform float rBeta; // Reciprocal of Beta
+
+uniform float CellSize;
+
+in vec2 fragUV;
+out vec4 FragColor;
+
+void main()
+{
+    ivec2 uv = ivec2(gl_FragCoord.xy);
+    vec2 xL = texelFetchOffset( X, uv, 0, ivec2(-1,  0) ).xy;
+    vec2 xR = texelFetchOffset( X, uv, 0, ivec2( 1,  0) ).xy;
+    vec2 xT = texelFetchOffset( X, uv, 0, ivec2( 0,  1) ).xy;
+    vec2 xB = texelFetchOffset( X, uv, 0, ivec2( 0, -1) ).xy;
+    
+    vec2 b = texelFetch( B, uv, 0 ).xy;
+    
+    vec2 p = rBeta * (xT + xB + xL + xR + (Alpha * b));
+
+    FragColor = vec4(p, 0, 0);
+}
+
+
