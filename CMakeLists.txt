@@ -21,7 +21,7 @@ set( performance_experiments_VERSION_MINOR 0 )
 ############################################
 # Flags for C++11 with g++
 #list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs")
-list( APPEND CMAKE_CXX_FLAGS "-std=c++11 -static-libstdc++")
+list( APPEND CMAKE_CXX_FLAGS "-std=c++17 -static-libstdc++")
 
 # staticly link in libstdc++
 set(CMAKE_EXE_LINKER_FLAGS "-static-libstdc++ ${CMAKE_EXE_LINKER_FLAGS}")
@@ -44,6 +44,7 @@ include_directories(${DATA})
 
 ################################
 # Add OpenGL
+# cmake_policy(SET OpenGL_GL_PREFERENCE "GLVND")
 find_package(OpenGL REQUIRED)
 if(NOT OPENGL_FOUND)
     message("ERROR: OpenGL not found")
@@ -70,9 +71,9 @@ endif(WIN32)
 ###########################################
 # Add GLFW3, http://www.glfw.org/docs/latest/build.html
 # Using method: With CMake on Unix and -installed- GLFW binaries
-# to install glfw use: 
+# to install glfw use:
 #   make ; sudo make install
-# the install directories are: 
+# the install directories are:
 #   /usr/local/include/GLFW
 #   /usr/local/lib/cmake/glfw
 #   /usr/local/lib/pkgconfig/glfw3.pc

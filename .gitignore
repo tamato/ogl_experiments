@@ -1,5 +1,6 @@
 # project specific items to ignore
 bin
+bin/*
 
 common/CMakeFiles
 common/Makefile
@@ -10,13 +11,13 @@ experiments/*/Makefile
 experiments/*/cmake_install.cmake
 
 external
+external/*
 
 CMakeCache.txt
 CMakeFiles
 Makefile
 cmake_install.cmake
 *.cbp
-CMakeLists.txt.*
 
 
 # vcxproj files
@@ -35,7 +36,6 @@ experiments/*/Release
 experiments/*/Debug
 experiments/*/*.dir
 experiments/*.exe
-external/*
 win
 
 # my own files

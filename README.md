@@ -1,8 +1,4 @@
 ###Requirements to run these experiments
-####A compiler that supports C++11 features:
-1. init'ing arrays
-2. vector::data()
-3. nullptr
 
 ####A nvidia card for nvidia specific extensions
 1. GL_NV_shader_buffer_load
@@ -26,6 +22,13 @@
 3. GLM
 
 ###How to build [GLEW](https://github.com/nigels-com/glew):
+
+Grab GLEW
+* git clone git@github.com:nigels-com/glew.git
+* git checkout tags/glew-2.2.0 -b ogl_experiments
+
+*Why not install glew through package manager?*
+
 ####Unix:
 * make extensions (to generate src/glew.c [GLEW](https://github.com/nigels-com/glew))
 * make
@@ -37,6 +40,11 @@
 * use the project file in build/vc6/
 
 ###How to build [GLFW](https://github.com/glfw/glfw):
+
+Grab GLFW
+* git clone git@github.com:glfw/glfw.git
+* git checkout tags/3.3.8 -b ogl_experiments
+
 ####Unix:
 * cmake .
 * make
@@ -46,27 +54,52 @@
 
 
 ###Experiments
+
 ####bindless_nv
+
 Compares bindless vbo's vrs traditional vbos
+
 ####indirect
+
 Learning experiment on how to work with indirect rendering
+
 ####depth_buffer
+
 Comparing traditional vs logrithmic writes to the depth buffer
+
 ####round_trip
+
 Finding the amount of time it takes to send a texture to the gpu, write to it and then read it back
+
 ####raster_pattern
+
 Renders GPU's rasterization pattern
+
 ####bits
+
 Messing around with bit twiddling for the paper "Single Pass GPU Voxelization" section 6.
+
 ####scene_depth
+
 Gets the used depth of the scene in a single draw call.
+
 ####single_pass_voxel
+
 Implementing the paper "Single-Pass GPU Solid Voxelization for Real-Time Applications".
+
 ####glsl_derivative
+
 A test to see if dFdx(position) and dFdy(position) are orthogonal
+
 ####wire_aa
+
 Tests wether a proj matrix needs to be transposed for dot product ops, and finds pixel sizes at different depths.
+
 ####ogl_compute
+
 Demo project to experiment with opengl compute shaders. Renders out a 2D fluid simulation.
+
 ####buffer_streaming
+
 App to compare different buffer streaming techniques.
+
